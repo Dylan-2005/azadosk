@@ -125,6 +125,37 @@ body {
     box-shadow: 0 10px 20px rgba(255, 107, 53, 0.3);
 }
 
+/* Login Footer con botón de Modo Cliente */
+.login-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid var(--light-bg);
+    text-align: center;
+}
+
+.login-footer p {
+    color: #999;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.btn-cliente {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: var(--accent-color);
+    color: var(--text-light);
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-cliente:hover {
+    background-color: #1f5c2f;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(44, 122, 63, 0.3);
+}
+
 .login-hint {
     text-align: center;
     font-size: 12px;

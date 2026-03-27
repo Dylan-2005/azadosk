@@ -3,7 +3,7 @@ let productos = [];
 
 // Cargar productos del localStorage o usar los por defecto
 function inicializarProductos() {
-    const LS_PRODUCTOS = 'asadosk_productos';
+    const LS_PRODUCTOS = 'AZADOSk_productos';
     const productosGuardados = localStorage.getItem(LS_PRODUCTOS);
 
     if (productosGuardados) {
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Escuchar cambios en localStorage para actualizaciones en tiempo real
     window.addEventListener('storage', (e) => {
-        if (e.key === 'asadosk_productos') {
+        if (e.key === 'AZADOSk_productos') {
             // Recargar productos cuando cambien
             inicializarProductos();
             cargarProductos('todos');
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Cargar carrito del localStorage
 function cargarCarritoLocal() {
-    const carritoGuardado = localStorage.getItem('asadosk_carrito');
+    const carritoGuardado = localStorage.getItem('AZADOSk_carrito');
     if (carritoGuardado) {
         carrito = JSON.parse(carritoGuardado);
     }
@@ -173,7 +173,7 @@ function cargarCarritoLocal() {
 
 // Guardar carrito en localStorage
 function guardarCarritoLocal() {
-    localStorage.setItem('asadosk_carrito', JSON.stringify(carrito));
+    localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
 }
 
 // Cargar productos

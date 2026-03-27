@@ -1,13 +1,13 @@
 // ==================== CONFIGURACIÓN ====================
 const CREDENCIALES = {
-    usuario: 'Maryury',
-    contrasena: 'asadosk2026agosto'
+    usuario: 'Maryuri',
+    contrasena: 'Azadosk2026agosto'
 };
 
 // Claves de localStorage
-const LS_PRODUCTOS = 'asadosk_productos';
-const LS_USUARIO = 'asadosk_usuario';
-const LS_SESION = 'asadosk_sesion';
+const LS_PRODUCTOS = 'AZADOSk_productos';
+const LS_USUARIO = 'AZADOSk_usuario';
+const LS_SESION = 'AZADOSk_sesion';
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -419,7 +419,7 @@ function exportarProductos() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `asados-k-productos-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `AZADOS-k-productos-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     mostrarNotificacion('Productos exportados correctamente', 'success');
 }
