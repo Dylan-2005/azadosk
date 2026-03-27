@@ -45,18 +45,7 @@ function inicializarProductos() {
                 precio: 70000,
                 stock: 10
             },
-            // Asado al Barril
-            {
-                id: 4,
-                nombre: 'Asado al Barril',
-                categoria: 'asado',
-                descripcion: 'Nuestro clásico asado al barril. ¡El sabor que alegra tu fin de semana!',
-                ingredientes: 'Costilla de cerdo premium, chorizo santarosano, chicharrón, morcilla, chinchulines, riñones, hígado, salsa chimichurri, pan casero',
-                detalles: 'Nuestro plato estrella preparado con la técnica tradicional del asado al barril. Incluye variedad de achuras y carnes premium. Tiempo de preparación: 4-5 horas.',
-                emoji: '🔥',
-                precio: 85000,
-                stock: 5
-            },
+
             {
                 id: 5,
                 nombre: 'Chorizo Santarosano',
@@ -141,8 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Escuchar cambios en localStorage para actualizaciones en tiempo real
     window.addEventListener('storage', (e) => {
-        if (e.key === 'AZADOSk_productos') {
-            // Recargar productos cuando cambien
+        if (e.key === 'AZADOSk_productos' || e.key === 'AZADOSk_productos_actualizados') {
+            // Recargar productos cuando cambien en cualquier tab/dispositivo
             inicializarProductos();
             cargarProductos('todos');
             // Actualizar carrito si algún producto cambió
@@ -462,7 +451,7 @@ function confirmarPedidoCliente(event) {
     const mensaje = `Hola, quiero hacer un pedido:\n\n*Datos del cliente:*\n👤 ${nombre}\n📱 ${telefono}\n📍 ${direccion}${notas ? `\n📝 Notas: ${notas}` : ''}\n\n*Pedido:*\n${detalles}\n\n💰 Total: $${formatearPrecio(total)}`;
 
     // Número de WhatsApp
-    const numeroWhatsApp = '573052124784';
+    const numeroWhatsApp = '573206364371';
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
 
     window.open(url, '_blank');
