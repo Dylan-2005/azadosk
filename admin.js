@@ -1,7 +1,7 @@
 // ==================== CONFIGURACIÓN ====================
 const CREDENCIALES = {
-    usuario: 'admin',
-    contrasena: 'asadosk2026'
+    usuario: 'Maryury',
+    contrasena: 'asadosk2026agosto'
 };
 
 // Claves de localStorage
