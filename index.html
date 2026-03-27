@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asados K - Comidas Rápidas y Asados</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header / Navbar -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="container">
+                <div class="navbar-brand">
+                    <h1 class="logo">🔥 ASADOS K</h1>
+                    <p class="tagline">El sabor que alegra tu fin de semana</p>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#inicio" class="nav-link active">Inicio</a></li>
+                    <li><a href="#menu" class="nav-link">Menú</a></li>
+                    <li><a href="#contacto" class="nav-link">Contacto</a></li>
+                    <li><a href="admin.html" class="nav-link admin-link" title="Panel Administrativo">⚙️</a></li>
+                </ul>
+                <div class="carrito-icon">
+                    <span class="cart-count" id="cartCount">0</span>
+                    🛒
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="inicio">
+        <div class="hero-content">
+            <h2>Bienvenido a Asados K</h2>
+            <p>Las mejores comidas rápidas y asados al barril</p>
+            <button class="btn btn-primary" onclick="document.getElementById('menu').scrollIntoView({behavior: 'smooth'})">
+                Ver Menú
+            </button>
+        </div>
+    </section>
+
+    <!-- Productos -->
+    <section class="menu-section" id="menu">
+        <div class="container">
+            <h2 class="section-title">Nuestro Menú</h2>
+            
+            <!-- Filtros -->
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filtrarProductos('todos')">Todos</button>
+                <button class="filter-btn" onclick="filtrarProductos('picadas')">Picadas</button>
+                <button class="filter-btn" onclick="filtrarProductos('asado')">Asado al Barril</button>
+                <button class="filter-btn" onclick="filtrarProductos('adicionales')">Adiciones</button>
+            </div>
+
+            <!-- Grid de Productos -->
+            <div class="products-grid" id="productsGrid">
+                <!-- Los productos se cargarán aquí con JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal del Carrito -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarCarrito()">&times;</span>
+            <h2>Tu Carrito</h2>
+            <div class="cart-items" id="cartItems">
+                <!-- Los items del carrito se mostrarán aquí -->
+            </div>
+            <div class="cart-total">
+                <p>Total: <span id="totalPrice">$0</span></p>
+            </div>
+            
+            <!-- Opciones de confirmación -->
+            <div class="cart-options">
+                <button class="btn btn-primary" onclick="mostrarFormularioCliente()">📝 Llenar Información</button>
+                <button class="btn btn-success" onclick="confirmarPedidoWhatsApp()">📱 Pedir por WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Información del Cliente -->
+    <div class="modal" id="clienteModal">
+        <div class="modal-content modal-cliente">
+            <span class="close" onclick="cerrarClienteModal()">&times;</span>
+            <h2>Información para el Pedido</h2>
+            <form class="cliente-form" id="clienteForm" onsubmit="confirmarPedidoCliente(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="clienteNombre">Nombre *</label>
+                        <input type="text" id="clienteNombre" placeholder="Tu nombre completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="clienteTelefono">Teléfono *</label>
+                        <input type="tel" id="clienteTelefono" placeholder="+57 300 123 4567" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="clienteDireccion">Dirección *</label>
+                    <textarea id="clienteDireccion" placeholder="Dirección completa para entrega" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="clienteNotas">Notas adicionales (opcional)</label>
+                    <textarea id="clienteNotas" placeholder="Instrucciones especiales, referencias, etc." rows="2"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Confirmar Pedido</button>
+                    <button type="button" class="btn btn-secondary" onclick="cerrarClienteModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contacto -->
+    <section class="contact-section" id="contacto">
+        <div class="container">
+            <h2 class="section-title">¡Contactanos!</h2>
+            <div class="contact-info">
+                <div class="contact-item">
+                    <h3>📱 Teléfono</h3>
+                    <p><a href="tel:+573206364371">+57 320 636 4371</a></p>
+                </div>
+                <div class="contact-item">
+                    <h3>📍 Ubicación</h3>
+                    <p>Tu ciudad - Disponible a domicilio</p>
+                </div>
+                <div class="contact-item">
+                    <h3>⏰ Horario</h3>
+                    <p>Viernes a Domingo<br>11:00 AM - 10:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Asados K - Todos los derechos reservados</p>
+        </div>
+    </footer>
+
+    <!-- Modal de Detalles del Producto -->
+    <div class="modal" id="productModal">
+        <div class="modal-content modal-product">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <div class="product-detail">
+                <div class="product-header">
+                    <h2 id="productTitle"></h2>
+                    <p class="product-description" id="productDescription"></p>
+                    <p class="product-price" id="productPrice"></p>
+                </div>
+                
+                <div class="product-info-section">
+                    <h3>🍽️ Ingredientes</h3>
+                    <p class="product-ingredients" id="productIngredients"></p>
+                </div>
+                
+                <div class="product-info-section">
+                    <h3>ℹ️ Detalles</h3>
+                    <p class="product-details" id="productDetails"></p>
+                </div>
+                
+                <div class="product-stock-modal" id="productStock"></div>
+                
+                <div class="quantity-selector">
+                    <button onclick="decrementarCantidad()">-</button>
+                    <input type="number" id="quantity" value="1" min="1" max="10">
+                    <button onclick="incrementarCantidad()">+</button>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="agregarAlCarrito()">Agregar al Carrito</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

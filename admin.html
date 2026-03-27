@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativo - Asados K</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Login Section -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>🔐 ASADOS K</h1>
+                <p>Panel Administrativo</p>
+            </div>
+            <form class="login-form" onsubmit="autenticar(event)">
+                <div class="form-group">
+                    <label for="usuario">Usuario:</label>
+                    <input type="text" id="usuario" placeholder="Ingresa tu usuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="contrasena">Contraseña:</label>
+                    <input type="password" id="contrasena" placeholder="Ingresa tu contraseña" required>
+                </div>
+                <button type="submit" class="btn-login">Ingresar</button>
+            </form>
+            <p class="login-hint">Demo: admin / asadosk2026</p>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>🔥 ASADOS K - Panel Administrativo</h1>
+            </div>
+            <div class="header-right">
+                <span id="usuarioActual" class="usuario-actual"></span>
+                <button class="btn btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="admin-container">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <nav class="admin-nav">
+                    <button class="nav-btn active" onclick="cambiarSeccion('productos')">
+                        📦 Productos
+                    </button>
+                    <button class="nav-btn" onclick="cambiarSeccion('agregar')">
+                        ➕ Agregar Producto
+                    </button>
+                    <button class="nav-btn" onclick="cambiarSeccion('estadisticas')">
+                        📊 Estadísticas
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="admin-content">
+                <!-- Sección Productos -->
+                <section class="content-section active" id="productosSection">
+                    <div class="section-header">
+                        <h2>Gestión de Productos</h2>
+                        <button class="btn btn-primary" onclick="cambiarSeccion('agregar')">
+                            ➕ Nuevo Producto
+                        </button>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="filter-section">
+                        <input type="text" id="searchInput" placeholder="Buscar producto..." 
+                               onkeyup="filtrarProductos()" class="search-input">
+                        <select id="categoryFilter" onchange="filtrarProductos()" class="filter-select">
+                            <option value="">Todas las categorías</option>
+                            <option value="picadas">Picadas</option>
+                            <option value="asado">Asado al Barril</option>
+                            <option value="adicionales">Adiciones</option>
+                        </select>
+                    </div>
+
+                    <!-- Tabla de Productos -->
+                    <div class="table-container">
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th>Descripción</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productosTableBody">
+                                <!-- Se llenará con JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Sección Agregar/Editar Producto -->
+                <section class="content-section" id="agregarSection">
+                    <div class="section-header">
+                        <h2 id="formTitle">Agregar Nuevo Producto</h2>
+                    </div>
+
+                    <form class="product-form" id="productForm" onsubmit="guardarProducto(event)">
+                        <input type="hidden" id="productoId">
+
+                        <div class="form-group">
+                            <label for="nombre">Nombre del Producto *</label>
+                            <input type="text" id="nombre" placeholder="Ej: Picada Personal" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="categoria">Categoría *</label>
+                                <select id="categoria" required>
+                                    <option value="">Selecciona una categoría</option>
+                                    <option value="picadas">Picadas</option>
+                                    <option value="asado">Asado al Barril</option>
+                                    <option value="adicionales">Adiciones</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="emoji">Emoji *</label>
+                                <input type="text" id="emoji" placeholder="🍖" maxlength="2" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="precio">Precio *</label>
+                                <input type="number" id="precio" placeholder="18000" min="1000" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="stock">Stock *</label>
+                                <input type="number" id="stock" placeholder="20" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion">Descripción *</label>
+                            <textarea id="descripcion" placeholder="Describe el producto detalladamente" rows="4" required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ingredientes">Ingredientes *</label>
+                            <textarea id="ingredientes" placeholder="Lista detallada de todos los ingredientes" rows="4" required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="detalles">Detalles Adicionales *</label>
+                            <textarea id="detalles" placeholder="Información adicional como tiempo de preparación, porciones, etc." rows="4" required></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Guardar Producto</button>
+                            <button type="button" class="btn btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
+                            <button type="button" class="btn btn-cancel" onclick="cambiarSeccion('productos')" style="display: none;" id="btnCancelar">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Sección Estadísticas -->
+                <section class="content-section" id="estadisticasSection">
+                    <div class="section-header">
+                        <h2>Estadísticas</h2>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalProductos">0</div>
+                            <div class="stat-label">Total de Productos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="productosActivos">0</div>
+                            <div class="stat-label">Productos Activos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="precioPromedio">$0</div>
+                            <div class="stat-label">Precio Promedio</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="productoMasCaro">$0</div>
+                            <div class="stat-label">Producto Más Caro</div>
+                        </div>
+                    </div>
+
+                    <!-- Distribución por Categoría -->
+                    <div class="category-stats">
+                        <h3>Productos por Categoría</h3>
+                        <div class="category-list" id="categoryList">
+                            <!-- Se llenará con JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="admin-actions">
+                        <button class="btn btn-warning" onclick="exportarProductos()">📥 Exportar Productos</button>
+                        <button class="btn btn-info" onclick="resetearProductos()" id="resetBtn">🔄 Restaurar Datos Originales</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
