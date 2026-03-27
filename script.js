@@ -406,7 +406,7 @@ function confirmarPedidoWhatsApp() {
     const mensaje = `Hola, quiero hacer un pedido:\n\n${detalles}\n\nTotal: $${formatearPrecio(total)}\n\n*Pedido rápido por WhatsApp*`;
 
     // Número de WhatsApp
-    const numeroWhatsApp = '573052124784';
+    const numeroWhatsApp = '573206364371';
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
 
     window.open(url, '_blank');
