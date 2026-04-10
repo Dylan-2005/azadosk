@@ -1,59 +1,182 @@
 // ==================== CONFIGURACIÓN ====================
-const CREDENCIALES = {
-    usuario: 'Maryuri',
-    contrasena: 'Azadosk2026agosto'
-};
+// Inicializar Supabase
+const supabaseUrl = 'https://pgprfmrormidbbvrnwaa.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncHJmbXJvcm1pZGJidnJud2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDIyODEsImV4cCI6MjA5MTQxODI4MX0.r0Igx_uWxf38Bwa7kTAjjd2LY6KCgqRictEMXWcyVvQ';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Claves de localStorage
 const LS_PRODUCTOS = 'AZADOSk_productos';
-const LS_USUARIO = 'AZADOSk_usuario';
-const LS_SESION = 'AZADOSk_sesion';
 const LS_ACTUALIZACION = 'AZADOSk_productos_actualizados';
 
 // ==================== INICIALIZACIÓN ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Depurar estado del usuario
+    await depurarUsuario();
+
     // Verificar si hay sesión activa
-    if (verificarSesion()) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && await verificarRolAdmin(user.id)) {
         mostrarPanelAdmin();
     } else {
         mostrarLogin();
     }
 
-    // Cargar productos del localStorage o usar los por defecto
+    // Cargar productos
     cargarProductos();
 });
 
 // ==================== AUTENTICACIÓN ====================
-function autenticar(event) {
+async function autenticar(event) {
     event.preventDefault();
 
-    const usuario = document.getElementById('usuario').value;
+    const email = document.getElementById('email').value.trim();
     const contrasena = document.getElementById('contrasena').value;
 
-    if (usuario === CREDENCIALES.usuario && contrasena === CREDENCIALES.contrasena) {
-        // Guardar sesión
-        localStorage.setItem(LS_SESION, 'activa');
-        localStorage.setItem(LS_USUARIO, usuario);
+    if (!email || !email.includes('@')) {
+        mostrarNotificacion('Ingresa un correo electrónico válido', 'error');
+        return;
+    }
 
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password: contrasena
+        });
+
+        if (error) {
+            mostrarNotificacion('Error de autenticación: ' + error.message, 'error');
+            return;
+        }
+
+        // Verificar si es admin
+        console.log('Usuario autenticado:', data.user.id);
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+        console.log('Perfil obtenido:', profile);
+        console.log('Error del perfil:', profileError);
+
+        if (profileError || !profile || profile.role !== 'admin') {
+            console.log('Usuario no es admin o error en perfil');
+            mostrarNotificacion('No tienes permisos de administrador', 'error');
+            await supabase.auth.signOut();
+            return;
+        }
+
+        console.log('Usuario es admin, mostrando panel');
         mostrarNotificacion('¡Bienvenido! Sesión iniciada correctamente', 'success');
         setTimeout(() => {
             mostrarPanelAdmin();
         }, 500);
-    } else {
-        mostrarNotificacion('Usuario o contraseña incorrectos', 'error');
-        document.getElementById('usuario').value = '';
-        document.getElementById('contrasena').value = '';
+    } catch (error) {
+        mostrarNotificacion('Error al iniciar sesión: ' + error.message, 'error');
     }
 }
 
-function verificarSesion() {
-    return localStorage.getItem(LS_SESION) === 'activa';
+async function verificarRolAdmin(userId) {
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        console.log('Verificando rol para userId:', userId);
+        console.log('Resultado:', data, 'Error:', error);
+        return !error && data && data.role === 'admin';
+    } catch (error) {
+        console.error('Error verificando rol:', error);
+        return false;
+    }
 }
 
-function cerrarSesion() {
+// Función para actualizar rol a admin (para desarrollo)
+async function hacerAdmin() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ role: 'admin' })
+                .eq('id', user.id);
+
+            if (error) {
+                console.error('Error actualizando rol:', error);
+            } else {
+                console.log('Rol actualizado a admin');
+                location.reload(); // Recargar página
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Función para crear perfil si no existe
+async function crearPerfil() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { error } = await supabase
+                .from('profiles')
+                .insert({ id: user.id, email: user.email, role: 'admin' });
+
+            if (error) {
+                console.error('Error creando perfil:', error);
+            } else {
+                console.log('Perfil creado');
+                location.reload();
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Función para depurar estado del usuario
+async function depurarUsuario() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const debugDiv = document.getElementById('debugInfo');
+
+        if (user) {
+            console.log('Usuario actual:', user);
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            console.log('Perfil del usuario:', profile);
+
+            let debugText = `Usuario: ${user.email}<br>`;
+            if (profile) {
+                debugText += `Rol: ${profile.role}<br>`;
+                if (profile.role !== 'admin') {
+                    debugText += `<button onclick="hacerAdmin()" style="margin-top: 10px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer;">Hacer Admin</button>`;
+                }
+            } else {
+                debugText += `Perfil: No encontrado<br>`;
+                debugText += `<button onclick="crearPerfil()" style="margin-top: 10px; padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;">Crear Perfil</button>`;
+            }
+
+            if (debugDiv) debugDiv.innerHTML = debugText;
+        } else {
+            console.log('No hay usuario autenticado');
+            if (debugDiv) debugDiv.innerHTML = 'No hay usuario autenticado';
+        }
+    } catch (error) {
+        console.error('Error en depuración:', error);
+        const debugDiv = document.getElementById('debugInfo');
+        if (debugDiv) debugDiv.innerHTML = `Error: ${error.message}`;
+    }
+}
+
+async function cerrarSesion() {
     if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-        localStorage.removeItem(LS_SESION);
-        localStorage.removeItem(LS_USUARIO);
+        await supabase.auth.signOut();
         mostrarNotificacion('Sesión cerrada correctamente', 'success');
         setTimeout(() => {
             mostrarLogin();
@@ -67,14 +190,14 @@ function mostrarLogin() {
     document.body.style.background = 'linear-gradient(135deg, #FF6B35 0%, #004E89 100%)';
 }
 
-function mostrarPanelAdmin() {
+async function mostrarPanelAdmin() {
     document.getElementById('loginContainer').style.display = 'none';
     document.getElementById('adminPanel').style.display = 'flex';
     document.body.style.background = '';
 
-    // Mostrar nombre de usuario
-    const usuario = localStorage.getItem(LS_USUARIO);
-    document.getElementById('usuarioActual').textContent = `👤 ${usuario}`;
+    // Mostrar email de usuario
+    const { data: { user } } = await supabase.auth.getUser();
+    document.getElementById('usuarioActual').textContent = `👤 ${user.email}`;
 
     // Cargar datos iniciales
     cargarTablaProductos();
@@ -85,30 +208,62 @@ function mostrarPanelAdmin() {
 let productos = [];
 let productoEditando = null;
 
-function cargarProductos() {
-    const productosGuardados = localStorage.getItem(LS_PRODUCTOS);
+async function cargarProductos() {
+    try {
+        const { data, error } = await supabase
+            .from('productos')
+            .select('*');
 
-    if (productosGuardados) {
-        productos = JSON.parse(productosGuardados);
-    } else {
-        productos = [
-            { id: 1, nombre: 'Picada Personal', categoria: 'picadas', descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 150 gr', ingredientes: 'Costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa', detalles: 'Porción individual perfecta para 1 persona.', emoji: '🍖', precio: 18000, stock: 20 },
-            { id: 2, nombre: 'Picada Doble', categoria: 'picadas', descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 320 gr', ingredientes: 'Doble porción de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa', detalles: 'Ideal para compartir entre 2 personas.', emoji: '🍗', precio: 37000, stock: 15 },
-            { id: 3, nombre: 'Picada Familiar', categoria: 'picadas', descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 750 gr', ingredientes: 'Gran porción familiar de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa', detalles: 'Perfecta para familias o grupos pequeños.', emoji: '🍲', precio: 70000, stock: 10 },
-            { id: 5, nombre: 'Chorizo Santarosano', categoria: 'asado', descripcion: 'Chorizo santarosano con papa y salsa de la casa. Delicioso y auténtico', ingredientes: 'Chorizo santarosano 100% carne de cerdo, papa asada, salsa de la casa', detalles: 'Receta tradicional de la región.', emoji: '🌶️', precio: 7000, stock: 30 },
-            { id: 6, nombre: 'Costilla 100gr', categoria: 'adicionales', descripcion: 'Costilla de cerdo asada al barril. 100 gramos de pura satisfacción', ingredientes: 'Costilla de cerdo premium asada al barril, sal y condimentos naturales', detalles: 'Corte premium preparado lentamente.', emoji: '🍖', precio: 9000, stock: 25 },
-            { id: 7, nombre: 'Chicharrón 100gr', categoria: 'adicionales', descripcion: 'Chicharrón crujiente 100 gramos. Acompañamiento perfecto', ingredientes: 'Piel de cerdo frita hasta lograr la textura crujiente perfecta, sal marina', detalles: 'Preparado artesanalmente.', emoji: '✨', precio: 9000, stock: 25 },
-            { id: 8, nombre: 'Chorizo', categoria: 'adicionales', descripcion: 'Chorizo asado 100 gramos. Sabor incomparable', ingredientes: 'Chorizo 100% carne de cerdo, ajo, pimienta, sal', detalles: 'Chorizo artesanal con condimentos tradicionales.', emoji: '🌶️', precio: 6000, stock: 40 },
-            { id: 9, nombre: 'Papas', categoria: 'adicionales', descripcion: 'Papas asadas. El acompañamiento ideal', ingredientes: 'Papas frescas, aceite de oliva, sal marina, romero', detalles: 'Preparadas al horno con hierbas aromáticas.', emoji: '🥔', precio: 3000, stock: 50 },
-            { id: 10, nombre: 'Yucas', categoria: 'adicionales', descripcion: 'Yucas fritas deliciosas. Perfectas para acompañar', ingredientes: 'Yuca fresca, aceite vegetal para freír, sal marina', detalles: 'Yuca fresca cortada en bastones y frita.', emoji: '🍗', precio: 3000, stock: 50 }
-        ];
-        guardarProductosLocal();
+        if (error) {
+            console.error('Error cargando productos desde Supabase:', error);
+            productos = getProductosPorDefectoAdmin();
+        } else if (data && data.length > 0) {
+            productos = data;
+        } else {
+            productos = getProductosPorDefectoAdmin();
+        }
+    } catch (error) {
+        console.error('Error conectando con Supabase:', error);
+        productos = getProductosPorDefectoAdmin();
     }
 }
 
-function guardarProductosLocal() {
-    localStorage.setItem(LS_PRODUCTOS, JSON.stringify(productos));
-    localStorage.setItem(LS_ACTUALIZACION, Date.now().toString());
+function getProductosPorDefectoAdmin() {
+    return [
+        { id: 1, nombre: 'Picada Personal', categoria: 'picadas', descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 150 gr', ingredientes: 'Costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa', detalles: 'Porción individual perfecta para 1 persona.', emoji: '🍖', precio: 18000, stock: 20 },
+        { id: 2, nombre: 'Picada Doble', categoria: 'picadas', descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 320 gr', ingredientes: 'Doble porción de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa', detalles: 'Ideal para compartir entre 2 personas.', emoji: '🍗', precio: 37000, stock: 15 },
+        { id: 3, nombre: 'Picada Familiar', categoria: 'picadas', descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 750 gr', ingredientes: 'Gran porción familiar de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa', detalles: 'Perfecta para familias o grupos pequeños.', emoji: '🍲', precio: 70000, stock: 10 },
+        { id: 5, nombre: 'Chorizo Santarosano', categoria: 'asado', descripcion: 'Chorizo santarosano con papa y salsa de la casa. Delicioso y auténtico', ingredientes: 'Chorizo santarosano 100% carne de cerdo, papa asada, salsa de la casa', detalles: 'Receta tradicional de la región.', emoji: '🌶️', precio: 7000, stock: 30 },
+        { id: 6, nombre: 'Costilla 100gr', categoria: 'adicionales', descripcion: 'Costilla de cerdo asada al barril. 100 gramos de pura satisfacción', ingredientes: 'Costilla de cerdo premium asada al barril, sal y condimentos naturales', detalles: 'Corte premium preparado lentamente.', emoji: '🍖', precio: 9000, stock: 25 },
+        { id: 7, nombre: 'Chicharrón 100gr', categoria: 'adicionales', descripcion: 'Chicharrón crujiente 100 gramos. Acompañamiento perfecto', ingredientes: 'Piel de cerdo frita hasta lograr la textura crujiente perfecta, sal marina', detalles: 'Preparado artesanalmente.', emoji: '✨', precio: 9000, stock: 25 },
+        { id: 8, nombre: 'Chorizo', categoria: 'adicionales', descripcion: 'Chorizo asado 100 gramos. Sabor incomparable', ingredientes: 'Chorizo 100% carne de cerdo, ajo, pimienta, sal', detalles: 'Chorizo artesanal con condimentos tradicionales.', emoji: '🌶️', precio: 6000, stock: 40 },
+        { id: 9, nombre: 'Papas', categoria: 'adicionales', descripcion: 'Papas asadas. El acompañamiento ideal', ingredientes: 'Papas frescas, aceite de oliva, sal marina, romero', detalles: 'Preparadas al horno con hierbas aromáticas.', emoji: '🥔', precio: 3000, stock: 50 },
+        { id: 10, nombre: 'Yucas', categoria: 'adicionales', descripcion: 'Yucas fritas deliciosas. Perfectas para acompañar', ingredientes: 'Yuca fresca, aceite vegetal para freír, sal marina', detalles: 'Yuca fresca cortada en bastones y frita.', emoji: '🍗', precio: 3000, stock: 50 }
+    ];
+}
+
+async function guardarProductosLocal() {
+    try {
+        // Primero, eliminar todos los productos existentes
+        await supabase.from('productos').delete().neq('id', 0);
+
+        // Insertar los productos actualizados
+        const { error } = await supabase
+            .from('productos')
+            .insert(productos);
+
+        if (error) {
+            console.error('Error guardando productos en Supabase:', error);
+            mostrarNotificacion('Error al guardar productos', 'error');
+        } else {
+            // Notificar actualización
+            localStorage.setItem(LS_ACTUALIZACION, Date.now().toString());
+            mostrarNotificacion('Productos guardados correctamente', 'success');
+        }
+    } catch (error) {
+        console.error('Error conectando con Supabase:', error);
+        mostrarNotificacion('Error de conexión', 'error');
+    }
 }
 
 function cargarTablaProductos(filtro = {}) {
@@ -161,7 +316,7 @@ function filtrarProductos() {
     cargarTablaProductos({ busqueda, categoria });
 }
 
-function guardarProducto(event) {
+async function guardarProducto(event) {
     event.preventDefault();
 
     const id = document.getElementById('productoId').value;
@@ -210,7 +365,7 @@ function guardarProducto(event) {
         mostrarNotificacion('Producto creado correctamente', 'success');
     }
 
-    guardarProductosLocal();
+    await guardarProductosLocal();
     limpiarFormulario();
     cargarTablaProductos();
     cambiarSeccion('productos');
@@ -241,10 +396,10 @@ function editarProducto(id) {
     }
 }
 
-function eliminarProducto(id) {
+async function eliminarProducto(id) {
     if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
         productos = productos.filter(p => p.id !== id);
-        guardarProductosLocal();
+        await guardarProductosLocal();
         cargarTablaProductos();
         mostrarNotificacion('Producto eliminado correctamente', 'success');
         syncProductos();
@@ -325,12 +480,12 @@ function exportarProductos() {
     mostrarNotificacion('Productos exportados correctamente', 'success');
 }
 
-function resetearProductos() {
+async function resetearProductos() {
     if (confirm('¿Deseas restaurar todos los productos a los valores originales? Esta acción no se puede deshacer.')) {
-        cargarProductos();
+        await cargarProductos();
         localStorage.removeItem(LS_PRODUCTOS);
-        cargarProductos();
-        guardarProductosLocal();
+        await cargarProductos();
+        await guardarProductosLocal();
         cargarTablaProductos();
         actualizarEstadisticas();
         mostrarNotificacion('Productos restaurados a valores originales', 'success');

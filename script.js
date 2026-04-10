@@ -1,119 +1,51 @@
 // Base de datos de productos (sincronizado con localStorage)
 let productos = [];
 
+// Inicializar Supabase
+const supabaseUrl = 'https://pgprfmrormidbbvrnwaa.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncHJmbXJvcm1pZGJidnJud2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDIyODEsImV4cCI6MjA5MTQxODI4MX0.r0Igx_uWxf38Bwa7kTAjjd2LY6KCgqRictEMXWcyVvQ';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 // Cargar productos del localStorage o usar los por defecto
-function inicializarProductos() {
-    const LS_PRODUCTOS = 'AZADOSk_productos';
-    const productosGuardados = localStorage.getItem(LS_PRODUCTOS);
+async function inicializarProductos() {
+    try {
+        // Intentar cargar desde Supabase
+        const { data, error } = await supabase
+            .from('productos')
+            .select('*');
 
-    if (productosGuardados) {
-        productos = JSON.parse(productosGuardados);
-    } else {
-        // Productos por defecto
-        productos = [
-            // Picadas
-            {
-                id: 1,
-                nombre: 'Picada Personal',
-                categoria: 'picadas',
-                descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 150 gr',
-                ingredientes: 'Costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa (tomate, cebolla, cilantro y limón)',
-                detalles: 'Porción individual perfecta para 1 persona. Preparado con ingredientes frescos y cocinado lentamente al barril para un sabor único.',
-                emoji: '🍖',
-                precio: 18000,
-                stock: 20
-            },
-            {
-                id: 2,
-                nombre: 'Picada Doble',
-                categoria: 'picadas',
-                descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 320 gr',
-                ingredientes: 'Doble porción de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa (tomate, cebolla, cilantro y limón)',
-                detalles: 'Ideal para compartir entre 2 personas. Elaborado con cortes premium de cerdo y cocinado tradicionalmente al barril.',
-                emoji: '🍗',
-                precio: 37000,
-                stock: 15
-            },
-            {
-                id: 3,
-                nombre: 'Picada Familiar',
-                categoria: 'picadas',
-                descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 750 gr',
-                ingredientes: 'Gran porción familiar de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa (tomate, cebolla, cilantro y limón)',
-                detalles: 'Perfecta para familias o grupos pequeños. Incluye todos nuestros mejores cortes preparados con dedicación y amor.',
-                emoji: '🍲',
-                precio: 70000,
-                stock: 10
-            },
+        if (error) {
+            console.error('Error cargando productos desde Supabase:', error);
+            throw error;
+        }
 
-            {
-                id: 5,
-                nombre: 'Chorizo Santarosano',
-                categoria: 'asado',
-                descripcion: 'Chorizo santarosano con papa y salsa de la casa. Delicioso y auténtico',
-                ingredientes: 'Chorizo santarosano 100% carne de cerdo, papa asada, salsa de la casa (tomate, cebolla, cilantro y limón)',
-                detalles: 'Chorizo tradicional de la región preparado con recetas ancestrales. Acompañado de papa asada y nuestra salsa especial.',
-                emoji: '🌶️',
-                precio: 7000,
-                stock: 30
-            },
-            // Adiciones
-            {
-                id: 6,
-                nombre: 'Costilla 100gr',
-                categoria: 'adicionales',
-                descripcion: 'Costilla de cerdo asada al barril. 100 gramos de pura satisfacción',
-                ingredientes: 'Costilla de cerdo premium asada al barril, sal y condimentos naturales',
-                detalles: 'Corte premium de costilla cocinado lentamente al barril para lograr la textura perfecta y sabor incomparable.',
-                emoji: '🍖',
-                precio: 9000,
-                stock: 25
-            },
-            {
-                id: 7,
-                nombre: 'Chicharrón 100gr',
-                categoria: 'adicionales',
-                descripcion: 'Chicharrón crujiente 100 gramos. Acompañamiento perfecto',
-                ingredientes: 'Piel de cerdo frita hasta lograr la textura crujiente perfecta, sal marina',
-                detalles: 'Preparado artesanalmente con técnicas tradicionales. La piel se fríe lentamente para lograr el punto perfecto de crujiente.',
-                emoji: '✨',
-                precio: 9000,
-                stock: 25
-            },
-            {
-                id: 8,
-                nombre: 'Chorizo 100gr',
-                categoria: 'adicionales',
-                descripcion: 'Chorizo asado 100 gramos. Sabor incomparable',
-                ingredientes: 'Chorizo 100% carne de cerdo, condimentos naturales, ajo, pimienta, sal',
-                detalles: 'Chorizo artesanal preparado con carnes seleccionadas y condimentos tradicionales de la región.',
-                emoji: '🌶️',
-                precio: 6000,
-                stock: 40
-            },
-            {
-                id: 9,
-                nombre: 'Papas',
-                categoria: 'adicionales',
-                descripcion: 'Papas asadas. El acompañamiento ideal',
-                ingredientes: 'Papas frescas, aceite de oliva, sal marina, romero',
-                detalles: 'Papas asadas al horno con hierbas aromáticas. Preparadas lentamente para mantener todo su sabor natural.',
-                emoji: '🥔',
-                precio: 3000,
-                stock: 50
-            },
-            {
-                id: 10,
-                nombre: 'Yucas',
-                categoria: 'adicionales',
-                descripcion: 'Yucas fritas deliciosas. Perfectas para acompañar',
-                ingredientes: 'Yuca fresca, aceite vegetal para freír, sal marina',
-                detalles: 'Yuca fresca cortada en bastones y frita hasta lograr la textura perfecta. Acompañamiento tradicional.',
-                emoji: '🍗',
-                precio: 3000,
-                stock: 50
-            }
-        ];
+        if (data && data.length > 0) {
+            productos = data;
+            console.log('Productos cargados desde Supabase');
+        } else {
+            // Si no hay datos en Supabase, usar productos por defecto
+            productos = getProductosPorDefecto();
+            console.log('Usando productos por defecto');
+        }
+    } catch (error) {
+        console.error('Error conectando con Supabase, usando productos por defecto:', error);
+        productos = getProductosPorDefecto();
+    }
+}
+
+// Función para actualizar stock en Supabase
+async function actualizarStockSupabase(id, nuevoStock) {
+    try {
+        const { error } = await supabase
+            .from('productos')
+            .update({ stock: nuevoStock })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error actualizando stock:', error);
+        }
+    } catch (error) {
+        console.error('Error conectando con Supabase para actualizar stock:', error);
     }
 }
 
@@ -129,10 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
     actualizarCarritoUI();
     
     // Escuchar cambios en localStorage para actualizaciones en tiempo real
-    window.addEventListener('storage', (e) => {
+    window.addEventListener('storage', async (e) => {
         if (e.key === 'AZADOSk_productos' || e.key === 'AZADOSk_productos_actualizados') {
             // Recargar productos cuando cambien en cualquier tab/dispositivo
-            inicializarProductos();
+            await inicializarProductos();
             cargarProductos('todos');
             // Actualizar carrito si algún producto cambió
             carrito.forEach(item => {
@@ -271,7 +203,7 @@ function decrementarCantidad() {
 }
 
 // Agregar al carrito
-function agregarAlCarrito() {
+async function agregarAlCarrito() {
     if (productoSeleccionado) {
         const cantidad = parseInt(document.getElementById('quantity').value);
         const stockDisponible = productoSeleccionado.stock || 0;
@@ -302,7 +234,7 @@ function agregarAlCarrito() {
 
         // Reducir stock temporalmente
         productoSeleccionado.stock -= cantidad;
-        guardarProductosLocal();
+        await actualizarStockSupabase(productoSeleccionado.id, productoSeleccionado.stock);
 
         // Mostrar notificación
         mostrarNotificacion(`${productoSeleccionado.nombre} agregado al carrito`, 'success');
@@ -371,14 +303,14 @@ function abrirCarrito() {
 }
 
 // Eliminar del carrito
-function eliminarDelCarrito(id) {
+async function eliminarDelCarrito(id) {
     const item = carrito.find(item => item.id === id);
     if (item) {
-        // Devolver stock
+            // Devolver stock
         const producto = productos.find(p => p.id === id);
         if (producto) {
             producto.stock += item.cantidad;
-            guardarProductosLocal();
+            await actualizarStockSupabase(producto.id, producto.stock);
         }
     }
     
@@ -493,29 +425,109 @@ window.addEventListener('click', (event) => {
     }
 });
 
-// Animaciones CSS dinámicas
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
+// Función para obtener productos por defecto
+function getProductosPorDefecto() {
+    return [
+        // Picadas
+        {
+            id: 1,
+            nombre: 'Picada Personal',
+            categoria: 'picadas',
+            descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 150 gr',
+            ingredientes: 'Costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa (tomate, cebolla, cilantro y limón)',
+            detalles: 'Porción individual perfecta para 1 persona. Preparado con ingredientes frescos y cocinado lentamente al barril para un sabor único.',
+            emoji: '🍖',
+            precio: 18000,
+            stock: 20
+        },
+        {
+            id: 2,
+            nombre: 'Picada Doble',
+            categoria: 'picadas',
+            descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 320 gr',
+            ingredientes: 'Doble porción de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa (tomate, cebolla, cilantro y limón)',
+            detalles: 'Ideal para compartir entre 2 personas. Elaborado con cortes premium de cerdo y cocinado tradicionalmente al barril.',
+            emoji: '🍗',
+            precio: 37000,
+            stock: 15
+        },
+        {
+            id: 3,
+            nombre: 'Picada Familiar',
+            categoria: 'picadas',
+            descripcion: 'Costilla de cerdo, chicharrón, chorizo, papa, yuca y salsa de la casa. Trae 750 gr',
+            ingredientes: 'Gran porción familiar de costilla de cerdo asada al barril, chicharrón crujiente, chorizo santarosano, papas asadas, yuca frita, salsa de la casa (tomate, cebolla, cilantro y limón)',
+            detalles: 'Perfecta para familias o grupos pequeños. Incluye todos nuestros mejores cortes preparados con dedicación y amor.',
+            emoji: '🍲',
+            precio: 70000,
+            stock: 10
+        },
+        {
+            id: 5,
+            nombre: 'Chorizo Santarosano',
+            categoria: 'asado',
+            descripcion: 'Chorizo santarosano con papa y salsa de la casa. Delicioso y auténtico',
+            ingredientes: 'Chorizo santarosano 100% carne de cerdo, papa asada, salsa de la casa (tomate, cebolla, cilantro y limón)',
+            detalles: 'Chorizo tradicional de la región preparado con recetas ancestrales. Acompañado de papa asada y nuestra salsa especial.',
+            emoji: '🌶️',
+            precio: 7000,
+            stock: 30
+        },
+        // Adiciones
+        {
+            id: 6,
+            nombre: 'Costilla 100gr',
+            categoria: 'adicionales',
+            descripcion: 'Costilla de cerdo asada al barril. 100 gramos de pura satisfacción',
+            ingredientes: 'Costilla de cerdo premium asada al barril, sal y condimentos naturales',
+            detalles: 'Corte premium de costilla cocinado lentamente al barril para lograr la textura perfecta y sabor incomparable.',
+            emoji: '🍖',
+            precio: 9000,
+            stock: 25
+        },
+        {
+            id: 7,
+            nombre: 'Chicharrón 100gr',
+            categoria: 'adicionales',
+            descripcion: 'Chicharrón crujiente 100 gramos. Acompañamiento perfecto',
+            ingredientes: 'Piel de cerdo frita hasta lograr la textura crujiente perfecta, sal marina',
+            detalles: 'Preparado artesanalmente con técnicas tradicionales. La piel se fríe lentamente para lograr el punto perfecto de crujiente.',
+            emoji: '✨',
+            precio: 9000,
+            stock: 25
+        },
+        {
+            id: 8,
+            nombre: 'Chorizo 100gr',
+            categoria: 'adicionales',
+            descripcion: 'Chorizo asado 100 gramos. Sabor incomparable',
+            ingredientes: 'Chorizo 100% carne de cerdo, condimentos naturales, ajo, pimienta, sal',
+            detalles: 'Chorizo artesanal preparado con carnes seleccionadas y condimentos tradicionales de la región.',
+            emoji: '🌶️',
+            precio: 6000,
+            stock: 40
+        },
+        {
+            id: 9,
+            nombre: 'Papas',
+            categoria: 'adicionales',
+            descripcion: 'Papas asadas. El acompañamiento ideal',
+            ingredientes: 'Papas frescas, aceite de oliva, sal marina, romero',
+            detalles: 'Papas asadas al horno con hierbas aromáticas. Preparadas lentamente para mantener todo su sabor natural.',
+            emoji: '🥔',
+            precio: 3000,
+            stock: 50
+        },
+        {
+            id: 10,
+            nombre: 'Yucas',
+            categoria: 'adicionales',
+            descripcion: 'Yucas fritas deliciosas. Perfectas para acompañar',
+            ingredientes: 'Yuca fresca, aceite vegetal para freír, sal marina',
+            detalles: 'Yuca fresca cortada en bastones y frita hasta lograr la textura perfecta. Acompañamiento tradicional.',
+            emoji: '🍗',
+            precio: 3000,
+            stock: 50
         }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
+    ];
+}
