@@ -1062,8 +1062,34 @@ function actualizarHorarioHoy() {
     hoyEl.innerHTML = `<strong style="color: #51CF66;">Abierto</strong><br>${horarioHoy.hora_apertura} - ${horarioHoy.hora_cierre}`;
 }
 
+// ==================== SISTEMA DE TEMA ====================
+const THEME_KEY = 'AZADOSk_theme_client';
+
+function initTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem(THEME_KEY, newTheme);
+    updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+        toggle.setAttribute('title', theme === 'light' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro');
+    }
+}
+
 // Cargar datos al iniciar página
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     cargarHorariosNegocio();
     cargarUbicacionNegocio();
 });

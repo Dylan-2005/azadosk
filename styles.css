@@ -8,13 +8,29 @@
     --primary-color: #FF6B35;      /* Naranja asado */
     --secondary-color: #004E89;    /* Azul oscuro */
     --accent-color: #2C7A3F;       /* Verde oscuro */
-    --dark-bg: #1A1A1A;            /* Negro/Gris muy oscuro */
-    --light-bg: #F5F5F5;           /* Gris claro */
     --warning-color: #FFB703;      /* Amarillo/Oro */
-    --text-dark: #2B2D42;          /* Texto oscuro */
-    --text-light: #FFFFFF;         /* Texto claro */
     --border-radius: 8px;
     --transition: all 0.3s ease;
+    
+    /* TEMA CLARO (default) */
+    --bg-primary: #F5F5F5;
+    --bg-secondary: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --text-primary: #2B2D42;
+    --text-secondary: #666666;
+    --border-color: #E0E0E0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* TEMA OSCURO */
+[data-theme="dark"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --bg-card: #2D2D2D;
+    --text-primary: #FFFFFF;
+    --text-secondary: #B0B0B0;
+    --border-color: #404040;
+    --shadow-color: rgba(0, 0, 0, 0.3);
 }
 
 html {
@@ -23,9 +39,10 @@ html {
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: var(--text-dark);
-    background-color: var(--light-bg);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Utilidades */
@@ -47,13 +64,13 @@ body {
 
 .btn-primary {
     background-color: var(--primary-color);
-    color: var(--text-light);
+    color: #FFFFFF;
 }
 
-.btn-primary:hover {
-    background-color: #E55A2B;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(255, 107, 53, 0.3);
+.filter-btn.active,
+.filter-btn:hover {
+    background-color: var(--primary-color);
+    color: #FFFFFF;
 }
 
 .btn-full {
@@ -62,12 +79,12 @@ body {
 
 /* Header / Navbar */
 .header {
-    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--secondary-color) 100%);
     padding: 10px 0;
     position: sticky;
     top: 0;
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px var(--shadow-color);
 }
 
 .navbar {
@@ -107,7 +124,7 @@ body {
 }
 
 .nav-link {
-    color: var(--text-light);
+    color: #FFFFFF;
     text-decoration: none;
     font-weight: 600;
     position: relative;
@@ -162,7 +179,7 @@ body {
     top: -10px;
     right: -10px;
     background-color: var(--warning-color);
-    color: var(--text-dark);
+    color: var(--text-primary);
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -181,7 +198,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-light);
+    color: #FFFFFF;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -235,14 +252,14 @@ body {
 /* Section Menú */
 .menu-section {
     padding: 80px 0;
-    background-color: var(--light-bg);
+    background-color: var(--bg-primary);
 }
 
 .section-title {
     text-align: center;
     font-size: 42px;
     margin-bottom: 50px;
-    color: var(--text-dark);
+    color: var(--text-primary);
     position: relative;
     display: inline-block;
     width: 100%;
@@ -277,11 +294,7 @@ body {
     transition: var(--transition);
 }
 
-.filter-btn.active,
-.filter-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--text-light);
-}
+/* Eliminado duplicado */
 
 /* Grid de Productos */
 .products-grid {
@@ -297,10 +310,10 @@ body {
 }
 
 .product-card {
-    background-color: var(--text-light);
+    background-color: var(--bg-card);
     border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px var(--shadow-color);
     transition: var(--transition);
     cursor: pointer;
     border: 3px solid transparent;
@@ -341,7 +354,7 @@ body {
     display: inline-block;
     font-size: 12px;
     background-color: var(--warning-color);
-    color: var(--text-dark);
+    color: var(--text-primary);
     padding: 4px 12px;
     border-radius: 20px;
     margin-bottom: 10px;
@@ -352,7 +365,7 @@ body {
     font-size: 20px;
     font-weight: 700;
     margin-bottom: 8px;
-    color: var(--text-dark);
+    color: var(--text-primary);
 }
 
 .product-description {
@@ -423,7 +436,7 @@ body {
 }
 
 .modal-content {
-    background-color: var(--text-light);
+    background-color: var(--bg-card);
     padding: 40px;
     border-radius: var(--border-radius);
     width: 90%;
@@ -457,7 +470,7 @@ body {
 .product-detail h2 {
     font-size: 28px;
     margin-bottom: 15px;
-    color: var(--text-dark);
+    color: var(--text-primary);
 }
 
 .product-header {
@@ -470,7 +483,7 @@ body {
 .product-info-section {
     margin-bottom: 20px;
     padding: 15px;
-    background-color: var(--light-bg);
+    background-color: var(--bg-primary);
     border-radius: 8px;
 }
 
@@ -485,7 +498,7 @@ body {
 .product-details {
     font-size: 14px;
     line-height: 1.6;
-    color: var(--text-dark);
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -511,7 +524,7 @@ body {
     width: 40px;
     height: 40px;
     border: 2px solid var(--primary-color);
-    background-color: var(--text-light);
+    background-color: var(--bg-card);
     color: var(--primary-color);
     border-radius: 4px;
     cursor: pointer;
@@ -522,7 +535,7 @@ body {
 
 .quantity-selector button:hover {
     background-color: var(--primary-color);
-    color: var(--text-light);
+    color: #FFFFFF;
 }
 
 .quantity-selector input {
@@ -546,7 +559,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-    background-color: var(--light-bg);
+    background-color: var(--bg-primary);
     border-radius: 6px;
     margin-bottom: 10px;
 }
@@ -557,7 +570,7 @@ body {
 
 .cart-item-name {
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--text-primary);
 }
 
 .cart-item-qty {
@@ -590,7 +603,7 @@ body {
 
 .cart-total {
     background-color: var(--secondary-color);
-    color: var(--text-light);
+    color: #FFFFFF;
     padding: 20px;
     border-radius: var(--border-radius);
     text-align: right;
@@ -643,7 +656,7 @@ body {
     display: block;
     font-weight: 600;
     margin-bottom: 5px;
-    color: var(--text-dark);
+    color: var(--text-primary);
 }
 
 .cliente-form input,
@@ -692,12 +705,12 @@ body {
 /* Contacto */
 .contact-section {
     padding: 80px 0;
-    background-color: var(--dark-bg);
-    color: var(--text-light);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 .contact-section .section-title {
-    color: var(--text-light);
+    color: var(--text-primary);
 }
 
 .contact-info {
@@ -739,8 +752,8 @@ body {
 
 /* Footer */
 .footer {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: var(--text-light);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
     text-align: center;
     padding: 30px 0;
     border-top: 3px solid var(--primary-color);
@@ -917,7 +930,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--light-bg);
+    background: var(--bg-card);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -1050,7 +1063,7 @@ body {
 }
 
 .horarios-modal-content {
-    background: white;
+    background: var(--bg-card);
     padding: 30px;
     border-radius: 16px;
     max-width: 400px;
@@ -1082,11 +1095,11 @@ body {
 }
 
 .horarios-close:hover {
-    color: #333;
+    color: var(--primary-color);
 }
 
 .horarios-modal-content h3 {
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 20px;
     font-size: 20px;
     text-align: center;
@@ -1117,11 +1130,11 @@ body {
 }
 
 .horario-dia-cliente {
-    color: #333;
+    color: var(--text-primary);
 }
 
 .horario-hora-cliente {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 14px;
 }
 
