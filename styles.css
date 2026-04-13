@@ -1324,3 +1324,40 @@ body {
 .product-modal-image img {
     cursor: zoom-in;
 }
+
+/* ==================== UBICACIÓN DINÁMICA ==================== */
+.ubicacion-dinamica {
+    min-height: 80px;
+}
+
+.ubicacion-mapa-link {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.ubicacion-mapa-link:hover {
+    background: #e55a2b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.ubicacion-mapa-link::after {
+    content: ' ↗';
+    font-size: 11px;
+}
+
+/* Ajustes responsive */
+@media (max-width: 768px) {
+    .ubicacion-mapa-link {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+}

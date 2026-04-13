@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo - AZADOS K</title>
+    <title>Panel Administrativo - AZADOS KANDELOANDELO</title>
     <link rel="stylesheet" href="admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
@@ -14,7 +14,7 @@
     <div class="login-container" id="loginContainer">
         <div class="login-box">
             <div class="login-header">
-                <h1>🔐 AZADOS K</h1>
+                <h1>🔐 AZADOS KANDELOANDELO</h1>
                 <p>Panel Administrativo</p>
             </div>
             <form class="login-form" onsubmit="autenticar(event)">
@@ -46,9 +46,13 @@
                     <span></span>
                     <span></span>
                 </button>
-                <h1>🔥 AZADOS K - Panel Administrativo</h1>
+                <h1>🔥 AZADOS KANDELO - Panel Administrativo</h1>
             </div>
             <div class="header-right">
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">
+                    <span class="theme-icon-light">☀️</span>
+                    <span class="theme-icon-dark">🌙</span>
+                </button>
                 <span id="usuarioActual" class="usuario-actual"></span>
                 <button class="btn btn-logout" onclick="cerrarSesion()">Cerrar Sesión</button>
             </div>
@@ -521,7 +525,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ubiNombre">Nombre del Negocio *</label>
-                                <input type="text" id="ubiNombre" required title="Nombre del negocio" placeholder="Ej: AZADOS K">
+                                <input type="text" id="ubiNombre" required title="Nombre del negocio" placeholder="Ej: AZADOS KANDELO">
                             </div>
                             <div class="form-group">
                                 <label for="ubiCiudad">Ciudad</label>
@@ -633,7 +637,7 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="confNombreApp">Nombre de la App</label>
-                                    <input type="text" id="confNombreApp" value="AZADOS K" title="Nombre de la aplicación" placeholder="Nombre del negocio">
+                                    <input type="text" id="confNombreApp" value="AZADOS KANDELO" title="Nombre de la aplicación" placeholder="Nombre del negocio">
                                 </div>
                                 <div class="form-group">
                                     <label for="confMoneda">Moneda</label>
@@ -692,12 +696,26 @@
                             </div>
                         </div>
 
+                        <div class="config-group">
+                            <h3>🎨 Accesibilidad</h3>
+                            <div class="form-group">
+                                <label for="fontSizeSlider">Tamaño de fuente del panel</label>
+                                <div class="font-size-control">
+                                    <span class="font-size-label small">A</span>
+                                    <input type="range" id="fontSizeSlider" min="12" max="30" value="14" step="1" onchange="cambiarTamanoFuente(this.value)">
+                                    <span class="font-size-label large">A</span>
+                                    <span id="fontSizeValue" class="font-size-value">14px</span>
+                                </div>
+                                <small>Ajusta el tamaño del texto solo para el panel administrativo. Se guarda automáticamente.</small>
+                            </div>
+                        </div>
+
                         <div class="config-group security-group">
                             <h3> Seguridad</h3>
-                            <div class="form-group">
-                                <label for="confAdminClave">Clave de Acceso al Admin</label>
-                                <input type="password" id="confAdminClave" placeholder="Ingresa nueva clave (dejar vacío para mantener actual)">
-                                <small>🔒 Esta clave protege el acceso al panel administrativo. Deja vacío para mantener la clave actual.</small>
+                            <div class="form-group floating-label">
+                                <input type="password" id="confAdminClave" placeholder=" ">
+                                <label for="confAdminClave">Nueva clave de acceso</label>
+                                <span class="input-hint">🔒 Deja vacío para mantener la actual. Mínimo 6 caracteres.</span>
                                 <div id="claveMensaje" class="clave-mensaje"></div>
                             </div>
                         </div>
@@ -724,7 +742,7 @@
     <div class="logout-modal" id="logoutModal">
         <div class="logout-modal-content">
             <div class="logout-icon">👋</div>
-            <h3 id="logoutAppName">AZADOS K</h3>
+            <h3 id="logoutAppName">AZADOS KANDELO</h3>
             <p>¿Estás seguro de que deseas cerrar sesión?</p>
             <div class="logout-actions">
                 <button class="btn btn-cancel" onclick="cancelarCerrarSesion()">Cancelar</button>

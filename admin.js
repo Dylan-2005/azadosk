@@ -39,6 +39,72 @@ function safeError(message, error) {
     console.error(safeMessage, safeErrorMsg);
 }
 
+// ==================== SISTEMA DE TEMA ====================
+const THEME_KEY = 'AZADOSk_theme';
+
+function initTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem(THEME_KEY, newTheme);
+    updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+        toggle.setAttribute('title', theme === 'light' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro');
+    }
+}
+
+// ==================== SISTEMA DE TAMAÑO DE FUENTE ====================
+const FONTSIZE_KEY = 'AZADOSk_fontsize';
+const DEFAULT_FONT_SIZE = 14;
+
+function initFontSize() {
+    const savedSize = localStorage.getItem(FONTSIZE_KEY) || DEFAULT_FONT_SIZE;
+    
+    // Aplicar inmediatamente
+    aplicarTamanoFuente(savedSize);
+    
+    // Actualizar el slider si existe (con delay para asegurar que DOM esté listo)
+    setTimeout(() => {
+        const slider = document.getElementById('fontSizeSlider');
+        const valueDisplay = document.getElementById('fontSizeValue');
+        if (slider) slider.value = savedSize;
+        if (valueDisplay) valueDisplay.textContent = savedSize + 'px';
+    }, 100);
+}
+
+function cambiarTamanoFuente(size) {
+    const newSize = parseInt(size) || DEFAULT_FONT_SIZE;
+    aplicarTamanoFuente(newSize);
+    localStorage.setItem(FONTSIZE_KEY, newSize);
+    
+    // Actualizar el display
+    const valueDisplay = document.getElementById('fontSizeValue');
+    if (valueDisplay) valueDisplay.textContent = newSize + 'px';
+}
+
+function aplicarTamanoFuente(size) {
+    // Aplicar a todo el documento para que afecte todos los textos
+    document.documentElement.style.fontSize = size + 'px';
+    
+    // También aplicar específicamente al body y panel para cascada
+    const body = document.body;
+    const adminPanel = document.querySelector('.admin-panel');
+    
+    if (body) body.style.fontSize = size + 'px';
+    if (adminPanel) adminPanel.style.fontSize = size + 'px';
+}
+
 // Claves de localStorage
 const LS_PRODUCTOS = 'AZADOSk_productos';
 const LS_ACTUALIZACION = 'AZADOSk_productos_actualizados';
@@ -47,6 +113,10 @@ const LS_REMEMBER_ME = 'AZADOSk_admin_remember';
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', async () => {
+    // Inicializar tema y tamaño de fuente primero
+    initTheme();
+    initFontSize();
+    
     // PRIMERO: Verificar seguridad del cliente (capa de protección)
     const seguridadClienteOK = verificarSeguridadCliente();
     
@@ -373,7 +443,7 @@ function mostrarModalCerrarSesion() {
     const modal = document.getElementById('logoutModal');
     
     // Actualizar nombre de la app si está disponible
-    const nombreApp = document.getElementById('confNombreApp')?.value || 'AZADOS K';
+    const nombreApp = document.getElementById('confNombreApp')?.value || 'AZADOS KANDELO';
     document.getElementById('logoutAppName').textContent = nombreApp;
     
     modal.classList.add('show');
@@ -1541,7 +1611,7 @@ async function cargarConfiguracion() {
         const conf = {};
         config?.forEach(c => conf[c.clave] = c.valor);
         
-        document.getElementById('confNombreApp').value = conf.nombre_app || 'AZADOS K';
+        document.getElementById('confNombreApp').value = conf.nombre_app || 'AZADOS KANDELO';
         document.getElementById('confMoneda').value = conf.moneda || 'COP';
         document.getElementById('confMensaje').value = conf.mensaje_bienvenida || '';
         document.getElementById('confPedidoMinimo').value = conf.pedido_minimo || 15000;

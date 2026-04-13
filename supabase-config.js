@@ -1,6 +1,3 @@
-// ==================== SUPABASE CONFIGURATION ====================
-// NOTA: En producción, considera usar variables de entorno
-// o un backend proxy para ocultar estas credenciales completamente
 
 (function() {
     'use strict';

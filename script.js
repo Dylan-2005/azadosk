@@ -887,6 +887,7 @@ async function cargarHorariosNegocio() {
         
         horariosData = horarios;
         actualizarEstadoNegocio();
+        actualizarHorarioHoy();
         
     } catch (error) {
         console.error('Error cargando horarios:', error);
@@ -994,7 +995,75 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Cargar horarios al iniciar página
+// ==================== UBICACIÓN DEL NEGOCIO ====================
+let ubicacionData = null;
+
+async function cargarUbicacionNegocio() {
+    try {
+        const { data: ubicacion, error } = await supabaseClient
+            .from('ubicacion')
+            .select('*')
+            .eq('activo', true)
+            .single();
+        
+        if (error) {
+            console.warn('Error cargando ubicación:', error);
+            // Mostrar mensaje por defecto aunque haya error
+            mostrarUbicacionNegocio();
+            return;
+        }
+        
+        ubicacionData = ubicacion;
+        mostrarUbicacionNegocio();
+        
+    } catch (error) {
+        console.error('Error cargando ubicación:', error);
+        // Mostrar mensaje por defecto aunque haya error
+        mostrarUbicacionNegocio();
+    }
+}
+
+function mostrarUbicacionNegocio() {
+    const direccionEl = document.getElementById('ubicacionDireccion');
+    const linkEl = document.getElementById('ubicacionLink');
+    
+    if (!direccionEl) return;
+    
+    // Mostrar solo la ciudad
+    const ciudad = ubicacionData?.ciudad || 'Buenaventura';
+    direccionEl.textContent = ciudad;
+    
+    // Configurar link del mapa si hay coordenadas
+    if (linkEl && ubicacionData?.latitud && ubicacionData?.longitud) {
+        const mapsUrl = `https://www.google.com/maps?q=${ubicacionData.latitud},${ubicacionData.longitud}`;
+        linkEl.href = mapsUrl;
+        linkEl.style.display = 'inline-block';
+    } else if (linkEl) {
+        linkEl.style.display = 'none';
+    }
+}
+
+function actualizarHorarioHoy() {
+    if (!horariosData || horariosData.length === 0) return;
+    
+    const hoyEl = document.getElementById('horarioHoy');
+    if (!hoyEl) return;
+    
+    const ahora = new Date();
+    const diaSemana = ahora.getDay();
+    const horarioHoy = horariosData.find(h => h.dia_semana === diaSemana);
+    const diasNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    
+    if (!horarioHoy || !horarioHoy.abierto) {
+        hoyEl.innerHTML = `<strong style="color: #FF6B6B;">Cerrado hoy</strong><br><small>${diasNombre[diaSemana]}</small>`;
+        return;
+    }
+    
+    hoyEl.innerHTML = `<strong style="color: #51CF66;">Abierto</strong><br>${horarioHoy.hora_apertura} - ${horarioHoy.hora_cierre}`;
+}
+
+// Cargar datos al iniciar página
 document.addEventListener('DOMContentLoaded', () => {
     cargarHorariosNegocio();
+    cargarUbicacionNegocio();
 });
