@@ -19,8 +19,13 @@
                     <li><a href="#inicio" class="nav-link active">Inicio</a></li>
                     <li><a href="#menu" class="nav-link">Menú</a></li>
                     <li><a href="#contacto" class="nav-link">Contacto</a></li>
-                    <li><a href="admin.html" class="nav-link admin-link" title="Panel Administrativo">⚙️</a></li>
+                    <li><a href="#" class="nav-link admin-link" title="Panel Administrativo" onclick="abrirModalSeguridad(event)">⚙️</a></li>
                 </ul>
+                <!-- Horario/Estado del Negocio -->
+                <div class="horario-status" id="horarioStatus" onclick="mostrarHorariosModal()">
+                    <span id="estadoNegocio" class="estado-badge">Cargando...</span>
+                </div>
+                
                 <div class="carrito-icon">
                     <span class="cart-count" id="cartCount">0</span>
                     🛒
@@ -28,6 +33,18 @@
             </div>
         </nav>
     </header>
+    
+    <!-- Modal de Horarios -->
+    <div class="horarios-modal" id="horariosModal" onclick="cerrarHorariosModal(event)">
+        <div class="horarios-modal-content">
+            <span class="horarios-close" onclick="cerrarHorariosModal(event)">&times;</span>
+            <h3>🕐 Horarios de Atención</h3>
+            <div id="horariosLista" class="horarios-lista">
+                <!-- Se llenará con JavaScript -->
+            </div>
+            <div id="estadoHorario" class="estado-horario-footer"></div>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero" id="inicio">
@@ -143,6 +160,7 @@
         <div class="modal-content modal-product">
             <span class="close" onclick="cerrarModal()">&times;</span>
             <div class="product-detail">
+                <div id="productImage" class="product-modal-image"></div>
                 <div class="product-header">
                     <h2 id="productTitle"></h2>
                     <p class="product-description" id="productDescription"></p>
@@ -163,7 +181,7 @@
                 
                 <div class="quantity-selector">
                     <button onclick="decrementarCantidad()">-</button>
-                    <input type="number" id="quantity" value="1" min="1" max="10">
+                    <input type="number" id="quantity" value="1" min="1" max="10" aria-label="Cantidad" title="Cantidad">
                     <button onclick="incrementarCantidad()">+</button>
                 </div>
                 <button class="btn btn-primary btn-full" onclick="agregarAlCarrito()">Agregar al Carrito</button>
@@ -171,7 +189,31 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Lightbox para imagen completa -->
+    <div class="lightbox" id="lightbox" onclick="cerrarLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightboxImg" src="" alt="Imagen completa">
+    </div>
+
+    <!-- Modal de Seguridad Admin -->
+    <div class="admin-security-modal" id="adminSecurityModal">
+        <div class="admin-security-content">
+            <span class="admin-security-close" onclick="cerrarModalSeguridad()">&times;</span>
+            <div class="admin-security-icon">🔒</div>
+            <h3>Acceso Restringido</h3>
+            <p>Esta área es solo para administradores autorizados.</p>
+            <form id="adminAccessForm" onsubmit="verificarClaveAdmin(event)">
+                <div class="form-group">
+                    <label for="adminClave">Clave de Acceso</label>
+                    <input type="password" id="adminClave" required placeholder="Ingresa la clave de administrador" autocomplete="off">
+                </div>
+                <div id="adminErrorMsg" class="admin-error-msg"></div>
+                <button type="submit" class="btn btn-primary btn-full">Acceder al Panel</button>
+            </form>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
 </body>
 </html>

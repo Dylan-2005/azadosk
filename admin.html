@@ -27,7 +27,7 @@
                 </div>
                 <button type="submit" class="btn-login">Ingresar</button>
             </form>
-            <div class="debug-info" id="debugInfo" style="margin-top: 20px; font-size: 12px; color: #666;"></div>
+            <div class="debug-info" id="debugInfo"></div>
             <div class="login-footer">
                 <p>¿Eres cliente?</p>
                 <a href="index.html" class="btn-cliente">👤 Modo Cliente</a>
@@ -36,10 +36,15 @@
     </div>
 
     <!-- Admin Panel -->
-    <div class="admin-panel" id="adminPanel" style="display: none;">
+    <div class="admin-panel hidden" id="adminPanel">
         <!-- Header -->
         <header class="admin-header">
             <div class="header-left">
+                <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Abrir menú">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
                 <h1>🔥 AZADOS K - Panel Administrativo</h1>
             </div>
             <div class="header-right">
@@ -50,25 +55,119 @@
 
         <!-- Main Content -->
         <div class="admin-container">
+            <!-- Overlay para cerrar menú en móvil -->
+            <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
             <!-- Sidebar -->
-            <aside class="admin-sidebar">
+            <aside class="admin-sidebar" id="adminSidebar">
+                <div class="sidebar-header-mobile">
+                    <h3>Menú</h3>
+                    <button class="menu-close" onclick="toggleMenu()" aria-label="Cerrar menú">✕</button>
+                </div>
                 <nav class="admin-nav">
-                    <button class="nav-btn active" onclick="cambiarSeccion('productos')">
+                    <button class="nav-btn active" onclick="cambiarSeccion('dashboard'); cerrarMenuSiMovil()">
+                        📊 Dashboard
+                    </button>
+                    <button class="nav-btn" onclick="cambiarSeccion('productos'); cerrarMenuSiMovil()">
                         📦 Productos
                     </button>
-                    <button class="nav-btn" onclick="cambiarSeccion('agregar')">
-                        ➕ Agregar Producto
+                    <button class="nav-btn" onclick="cambiarSeccion('categorias'); cerrarMenuSiMovil()">
+                        🏷️ Categorías
                     </button>
-                    <button class="nav-btn" onclick="cambiarSeccion('estadisticas')">
-                        📊 Estadísticas
+                    <button class="nav-btn" onclick="cambiarSeccion('horarios'); cerrarMenuSiMovil()">
+                        🕐 Horarios
+                    </button>
+                    <button class="nav-btn" onclick="cambiarSeccion('ubicacion'); cerrarMenuSiMovil()">
+                        📍 Ubicación
+                    </button>
+                    <button class="nav-btn" onclick="cambiarSeccion('pedidos'); cerrarMenuSiMovil()">
+                        Pedidos
+                    </button>
+                    <button class="nav-btn" onclick="cambiarSeccion('configuracion'); cerrarMenuSiMovil()">
+                        ⚙️ Configuración
                     </button>
                 </nav>
             </aside>
 
             <!-- Content Area -->
             <main class="admin-content">
+                <!-- DASHBOARD -->
+                <section class="content-section active" id="dashboardSection">
+                    <div class="section-header">
+                        <h2>Dashboard</h2>
+                        <span id="lastUpdated" class="last-updated"></span>
+                    </div>
+                    
+                    <!-- KPI Cards -->
+                    <div class="stats-grid dashboard-kpis">
+                        <div class="stat-card kpi-card">
+                            <div class="kpi-icon">📦</div>
+                            <div class="kpi-value" id="dashTotalProductos">0</div>
+                            <div class="kpi-label">Total Productos</div>
+                        </div>
+                        <div class="stat-card kpi-card">
+                            <div class="kpi-icon">🏷️</div>
+                            <div class="kpi-value" id="dashTotalCategorias">0</div>
+                            <div class="kpi-label">Categorías</div>
+                        </div>
+                        <div class="stat-card kpi-card">
+                            <div class="kpi-icon">📝</div>
+                            <div class="kpi-value" id="dashPedidosHoy">0</div>
+                            <div class="kpi-label">Pedidos Hoy</div>
+                        </div>
+                        <div class="stat-card kpi-card">
+                            <div class="kpi-icon">💰</div>
+                            <div class="kpi-value" id="dashVentasHoy">$0</div>
+                            <div class="kpi-label">Ventas Hoy</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dashboard Grid -->
+                    <div class="dashboard-grid">
+                        <!-- Estado del Negocio -->
+                        <div class="dashboard-card">
+                            <h3>🕐 Estado del Negocio</h3>
+                            <div id="dashEstadoNegocio" class="dash-status">
+                                <p>Cargando...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Últimos Pedidos -->
+                        <div class="dashboard-card">
+                            <h3>📝 Últimos Pedidos</h3>
+                            <div id="dashUltimosPedidos" class="dash-list">
+                                <p>No hay pedidos recientes</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Productos con Bajo Stock -->
+                        <div class="dashboard-card">
+                            <h3>⚠️ Bajo Stock</h3>
+                            <div id="dashBajoStock" class="dash-list">
+                                <p>Cargando...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Acciones Rápidas -->
+                        <div class="dashboard-card">
+                            <h3>⚡ Acciones Rápidas</h3>
+                            <div class="quick-actions">
+                                <button class="btn btn-primary" onclick="cambiarSeccion('agregar')">
+                                    ➕ Nuevo Producto
+                                </button>
+                                <button class="btn btn-secondary" onclick="cambiarSeccion('categorias')">
+                                    🏷️ Nueva Categoría
+                                </button>
+                                <button class="btn btn-info" onclick="window.open('../index.html', '_blank')">
+                                    🌐 Ver Tienda
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Sección Productos -->
-                <section class="content-section active" id="productosSection">
+                <section class="content-section" id="productosSection">
                     <div class="section-header">
                         <h2>Gestión de Productos</h2>
                         <button class="btn btn-primary" onclick="cambiarSeccion('agregar')">
@@ -80,7 +179,7 @@
                     <div class="filter-section">
                         <input type="text" id="searchInput" placeholder="Buscar producto..." 
                                onkeyup="filtrarProductos()" class="search-input">
-                        <select id="categoryFilter" onchange="filtrarProductos()" class="filter-select">
+                        <select id="categoryFilter" onchange="filtrarProductos()" class="filter-select" aria-label="Filtrar por categoría">
                             <option value="">Todas las categorías</option>
                             <option value="picadas">Picadas</option>
                             <option value="asado">Asado al Barril</option>
@@ -118,57 +217,123 @@
                     <form class="product-form" id="productForm" onsubmit="guardarProducto(event)">
                         <input type="hidden" id="productoId">
 
-                        <div class="form-group">
-                            <label for="nombre">Nombre del Producto *</label>
-                            <input type="text" id="nombre" placeholder="Ej: Picada Personal" required>
-                        </div>
-
-                        <div class="form-row">
+                        <!-- Sección: Información Básica -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">📋 Información Básica</h4>
+                            
                             <div class="form-group">
-                                <label for="categoria">Categoría *</label>
-                                <select id="categoria" required>
-                                    <option value="">Selecciona una categoría</option>
-                                    <option value="picadas">Picadas</option>
-                                    <option value="asado">Asado al Barril</option>
-                                    <option value="adicionales">Adiciones</option>
-                                </select>
+                                <label for="nombre">Nombre del Producto *</label>
+                                <input type="text" id="nombre" placeholder="Ej: Picada Personal" required>
                             </div>
 
-                            <div class="form-group">
-                                <label for="emoji">Emoji *</label>
-                                <input type="text" id="emoji" placeholder="🍖" maxlength="2" required>
-                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="categoria">Categoría *</label>
+                                    <select id="categoria" required>
+                                        <option value="">Selecciona categoría</option>
+                                        <option value="picadas">🍖 Picadas</option>
+                                        <option value="asado">🔥 Asado al Barril</option>
+                                        <option value="adicionales">🍟 Adiciones</option>
+                                    </select>
+                                </div>
 
-                            <div class="form-group">
-                                <label for="precio">Precio *</label>
-                                <input type="number" id="precio" placeholder="18000" min="1000" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="stock">Stock *</label>
-                                <input type="number" id="stock" placeholder="20" min="0" required>
+                                <div class="form-group">
+                                    <label for="emoji">Emoji</label>
+                                    <input type="text" id="emoji" placeholder="🍖" maxlength="2">
+                                    <small>Se asigna automáticamente según categoría</small>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="descripcion">Descripción *</label>
-                            <textarea id="descripcion" placeholder="Describe el producto detalladamente" rows="4" required></textarea>
+                        <!-- Sección: Precio y Stock -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">💰 Precio y Disponibilidad</h4>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="precio">Precio *</label>
+                                    <input type="number" id="precio" placeholder="$ 18,000" min="1000" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="stock">Stock Disponible *</label>
+                                    <input type="number" id="stock" placeholder="20 unidades" min="0" required>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="ingredientes">Ingredientes *</label>
-                            <textarea id="ingredientes" placeholder="Lista detallada de todos los ingredientes" rows="4" required></textarea>
+                        <!-- Sección: Detalles del Producto -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">📝 Detalles del Producto</h4>
+                            
+                            <div class="form-group">
+                                <label for="descripcion">Descripción *</label>
+                                <textarea id="descripcion" placeholder="Describe el producto detalladamente para los clientes..." rows="3" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ingredientes">Ingredientes *</label>
+                                <textarea id="ingredientes" placeholder="Lista todos los ingredientes incluidos..." rows="3" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="detalles">Información Adicional *</label>
+                                <textarea id="detalles" placeholder="Tiempo de preparación, porciones, recomendaciones..." rows="3" required></textarea>
+                            </div>
                         </div>
 
+                        <!-- Sección: Imagen -->
+                        <div class="form-section">
+                            <h4 class="form-section-title">🖼️ Imagen del Producto</h4>
                         <div class="form-group">
-                            <label for="detalles">Detalles Adicionales *</label>
-                            <textarea id="detalles" placeholder="Información adicional como tiempo de preparación, porciones, etc." rows="4" required></textarea>
+                            <label>Imagen del Producto</label>
+                            <input type="hidden" id="imagenUrlActual" value="">
+                            
+                            <!-- Área de Upload -->
+                            <div class="upload-area" id="uploadArea" onclick="document.getElementById('imagenProducto').click()">
+                                <div class="upload-content" id="uploadContent">
+                                    <div class="upload-icon">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </div>
+                                    <p class="upload-text">Arrastra una imagen aquí o <span class="upload-link">haz clic para seleccionar</span></p>
+                                    <p class="upload-hint">JPG, PNG, WebP • Máx. 5MB</p>
+                                </div>
+                                
+                                <!-- Preview Container -->
+                                <div class="upload-preview" id="uploadPreview">
+                                    <img id="previewImagen" alt="Vista previa">
+                                    <div class="preview-overlay">
+                                        <button type="button" class="btn-replace" onclick="event.stopPropagation(); document.getElementById('imagenProducto').click()">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="17 8 12 3 7 8"></polyline>
+                                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                                            </svg>
+                                            Cambiar imagen
+                                        </button>
+                                        <button type="button" class="btn-remove" onclick="event.stopPropagation(); eliminarImagenPreview()">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <input type="file" id="imagenProducto" accept="image/*" onchange="previewImagenModerno(this)" class="file-input-hidden" aria-label="Seleccionar imagen del producto">
+                        </div>
                         </div>
 
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Guardar Producto</button>
                             <button type="button" class="btn btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
-                            <button type="button" class="btn btn-cancel" onclick="cambiarSeccion('productos')" style="display: none;" id="btnCancelar">Cancelar</button>
+                            <button type="button" class="btn btn-cancel hidden" onclick="cambiarSeccion('productos')" id="btnCancelar">Cancelar</button>
                         </div>
                     </form>
                 </section>
@@ -212,7 +377,338 @@
                         <button class="btn btn-info" onclick="resetearProductos()" id="resetBtn">🔄 Restaurar Datos Originales</button>
                     </div>
                 </section>
+                            </thead>
+                            <tbody id="categoriasTableBody">
+                                <!-- Se llenará con JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Modal Categoría Moderno -->
+                <div class="modal" id="categoriaModal">
+                    <div class="modal-content modal-modern">
+                        <div class="modal-header-modern">
+                            <h3 id="categoriaModalTitle">🏷️ Nueva Categoría</h3>
+                            <button class="modal-close-btn" onclick="cerrarModalCategoria()" aria-label="Cerrar">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <form id="categoriaForm" onsubmit="guardarCategoria(event)">
+                            <input type="hidden" id="categoriaId">
+                            
+                            <!-- Sección: Información Principal -->
+                            <div class="form-section-modal">
+                                <h4 class="form-section-title">📋 Información Principal</h4>
+                                
+                                <div class="form-group">
+                                    <label for="catNombre">Nombre de la Categoría *</label>
+                                    <input type="text" id="catNombre" required placeholder="Ej: Picadas" title="Nombre visible para los clientes">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="catSlug">Slug (URL amigable) *</label>
+                                    <input type="text" id="catSlug" required placeholder="ej: picadas" title="Identificador único para URLs">
+                                    <small>Se usa en las URLs: azadosk.com/menu/[slug]</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="catDescripcion">Descripción</label>
+                                    <textarea id="catDescripcion" rows="2" placeholder="Breve descripción de qué incluye esta categoría..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Sección: Apariencia -->
+                            <div class="form-section-modal">
+                                <h4 class="form-section-title">🎨 Apariencia</h4>
+                                
+                                <div class="form-row-modern">
+                                    <div class="form-group emoji-group">
+                                        <label for="catEmoji">Emoji</label>
+                                        <input type="text" id="catEmoji" maxlength="2" placeholder="📦" title="Emoji representativo">
+                                        <small>📦 por defecto</small>
+                                    </div>
+                                    
+                                    <div class="form-group color-group">
+                                        <label for="catColor">Color</label>
+                                        <div class="color-input-wrapper">
+                                            <input type="color" id="catColor" value="#FF6B35" title="Color de la categoría">
+                                            <span class="color-value">#FF6B35</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group order-group">
+                                        <label for="catOrden">Orden</label>
+                                        <input type="number" id="catOrden" value="0" min="0" title="Posición en el menú">
+                                        <small>Menor = primero</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Sección: Estado -->
+                            <div class="form-section-modal">
+                                <div class="form-check-modern">
+                                    <input type="checkbox" id="catActiva" checked>
+                                    <label for="catActiva">
+                                        <span class="check-title">Categoría Activa</span>
+                                        <span class="check-desc">Visible en el menú del cliente</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions-modal">
+                                <button type="button" class="btn btn-cancel-modern" onclick="cerrarModalCategoria()">Cancelar</button>
+                                <button type="submit" class="btn btn-primary-modern">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Guardar Categoría
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN HORARIOS -->
+                <section class="content-section" id="horariosSection">
+                    <div class="section-header">
+                        <h2>Horarios de Atención</h2>
+                        <p class="section-subtitle">Configura los días y horas de apertura del negocio</p>
+                    </div>
+
+                    <div class="horarios-container">
+                        <div id="horariosList" class="horarios-list">
+                            <!-- Se llenará con JavaScript -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECCIÓN UBICACIÓN -->
+                <section class="content-section" id="ubicacionSection">
+                    <div class="section-header">
+                        <h2>Ubicación y Contacto</h2>
+                        <p class="section-subtitle">Información del negocio visible para los clientes</p>
+                    </div>
+
+                    <form id="ubicacionForm" onsubmit="guardarUbicacion(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ubiNombre">Nombre del Negocio *</label>
+                                <input type="text" id="ubiNombre" required title="Nombre del negocio" placeholder="Ej: AZADOS K">
+                            </div>
+                            <div class="form-group">
+                                <label for="ubiCiudad">Ciudad</label>
+                                <input type="text" id="ubiCiudad" value="Bogotá" title="Ciudad del negocio" placeholder="Ej: Bogotá">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ubiDireccion">Dirección Completa *</label>
+                            <textarea id="ubiDireccion" rows="3" required placeholder="Calle, número, barrio, referencias..." title="Dirección completa del negocio"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ubiTelefono">Teléfono</label>
+                                <input type="tel" id="ubiTelefono" placeholder="573206364371" title="Número de teléfono">
+                            </div>
+                            <div class="form-group">
+                                <label for="ubiWhatsapp">WhatsApp *</label>
+                                <input type="tel" id="ubiWhatsapp" required placeholder="573206364371" title="Número de WhatsApp">
+                            </div>
+                            <div class="form-group">
+                                <label for="ubiEmail">Email</label>
+                                <input type="email" id="ubiEmail" placeholder="contacto@azadosk.com" title="Correo electrónico">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ubiLatitud">Latitud (Opcional)</label>
+                                <input type="text" id="ubiLatitud" placeholder="4.609710" title="Coordenada de latitud">
+                            </div>
+                            <div class="form-group">
+                                <label for="ubiLongitud">Longitud (Opcional)</label>
+                                <input type="text" id="ubiLongitud" placeholder="-74.081749" title="Coordenada de longitud">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ubiMapa">Mapa Embed (Opcional)</label>
+                            <textarea id="ubiMapa" rows="3" placeholder="Código iframe de Google Maps..." title="Código de mapa embed"></textarea>
+                            <small>Pega aquí el código de inserción de Google Maps</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Guardar Ubicación</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- SECCIÓN PEDIDOS -->
+                <section class="content-section" id="pedidosSection">
+                    <div class="section-header">
+                        <h2>Gestión de Pedidos</h2>
+                        <div class="header-filters">
+                            <select id="filtroEstadoPedido" onchange="filtrarPedidos()" class="filter-select" title="Filtrar por estado del pedido">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="preparando">Preparando</option>
+                                <option value="listo">Listo</option>
+                                <option value="entregado">Entregado</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                            <input type="date" id="filtroFechaPedido" onchange="filtrarPedidos()" class="filter-input" title="Filtrar por fecha">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th># Pedido</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Teléfono</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pedidosTableBody">
+                                <!-- Se llenará con JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Modal Detalle Pedido -->
+                <div class="modal" id="pedidoModal">
+                    <div class="modal-content modal-large">
+                        <span class="close" onclick="cerrarModalPedido()">&times;</span>
+                        <h3>Detalle del Pedido <span id="pedidoNumero"></span></h3>
+                        <div id="pedidoDetalle" class="pedido-detalle">
+                            <!-- Se llenará con JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN CONFIGURACIÓN -->
+                <section class="content-section" id="configuracionSection">
+                    <div class="section-header">
+                        <h2>Configuración General</h2>
+                        <p class="section-subtitle">Ajustes del sistema y comportamiento de la tienda</p>
+                    </div>
+
+                    <form id="configForm" onsubmit="guardarConfiguracion(event)">
+                        <div class="config-group">
+                            <h3>🏬 Información General</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="confNombreApp">Nombre de la App</label>
+                                    <input type="text" id="confNombreApp" value="AZADOS K" title="Nombre de la aplicación" placeholder="Nombre del negocio">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confMoneda">Moneda</label>
+                                    <select id="confMoneda" title="Moneda del sistema">
+                                        <option value="COP">COP - Peso Colombiano</option>
+                                        <option value="USD">USD - Dólar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="confMensaje">Mensaje de Bienvenida</label>
+                                <textarea id="confMensaje" rows="2" title="Mensaje de bienvenida" placeholder="Mensaje que verán los clientes..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <h3>💰 Precios y Envíos</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="confPedidoMinimo">Pedido Mínimo ($)</label>
+                                    <input type="number" id="confPedidoMinimo" value="15000" min="0" title="Monto mínimo de pedido">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confCostoEnvio">Costo de Envío ($)</label>
+                                    <input type="number" id="confCostoEnvio" value="5000" min="0" title="Costo de envío">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confEnvioGratis">Envío Gratis desde ($)</label>
+                                    <input type="number" id="confEnvioGratis" value="50000" min="0" title="Monto para envío gratis">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="confImpuesto">Impuesto (%)</label>
+                                    <input type="number" id="confImpuesto" value="0" min="0" max="100" title="Porcentaje de impuesto">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confTiempoPrep">Tiempo Preparación (min)</label>
+                                    <input type="number" id="confTiempoPrep" value="30" min="0" title="Tiempo estimado de preparación">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <h3>🔧 Funcionalidades</h3>
+                            <div class="form-check-group">
+                                <label class="form-check">
+                                    <input type="checkbox" id="confMostrarStock" checked>
+                                    <span>Mostrar stock disponible a clientes</span>
+                                </label>
+                                <label class="form-check">
+                                    <input type="checkbox" id="confPermitirPedidos" checked>
+                                    <span>Permitir realizar pedidos</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="config-group security-group">
+                            <h3> Seguridad</h3>
+                            <div class="form-group">
+                                <label for="confAdminClave">Clave de Acceso al Admin</label>
+                                <input type="password" id="confAdminClave" placeholder="Ingresa nueva clave (dejar vacío para mantener actual)">
+                                <small> Esta clave es requerida para acceder al panel administrativo desde el engranaje.</small>
+                                <button type="button" class="btn btn-warning btn-sm btn-mostrar-clave" onclick="mostrarClaveActual()">
+                                    Mostrar clave actual
+                                </button>
+                                <div id="claveActualDisplay" class="clave-display clave-display-hidden"></div>
+                            </div>
+                        </div>
+
+                        <div class="config-group">
+                            <h3> Legal</h3>
+                            <div class="form-group">
+                                <label for="confTerminos">Términos y Condiciones</label>
+                                <textarea id="confTerminos" rows="4" placeholder="Ingresa los términos y condiciones de uso..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary"> Guardar Configuración</button>
+                        </div>
+                    </form>
+                </section>
+
             </main>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación Cerrar Sesión -->
+    <div class="logout-modal" id="logoutModal">
+        <div class="logout-modal-content">
+            <div class="logout-icon">👋</div>
+            <h3 id="logoutAppName">AZADOS K</h3>
+            <p>¿Estás seguro de que deseas cerrar sesión?</p>
+            <div class="logout-actions">
+                <button class="btn btn-cancel" onclick="cancelarCerrarSesion()">Cancelar</button>
+                <button class="btn btn-danger" onclick="confirmarCerrarSesion()">Cerrar Sesión</button>
+            </div>
         </div>
     </div>
 

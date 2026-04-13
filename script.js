@@ -4,13 +4,13 @@ let productos = [];
 // Inicializar Supabase
 const supabaseUrl = 'https://pgprfmrormidbbvrnwaa.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncHJmbXJvcm1pZGJidnJud2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDIyODEsImV4cCI6MjA5MTQxODI4MX0.r0Igx_uWxf38Bwa7kTAjjd2LY6KCgqRictEMXWcyVvQ';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Cargar productos del localStorage o usar los por defecto
 async function inicializarProductos() {
     try {
         // Intentar cargar desde Supabase
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('productos')
             .select('*');
 
@@ -21,11 +21,9 @@ async function inicializarProductos() {
 
         if (data && data.length > 0) {
             productos = data;
-            console.log('Productos cargados desde Supabase');
         } else {
             // Si no hay datos en Supabase, usar productos por defecto
             productos = getProductosPorDefecto();
-            console.log('Usando productos por defecto');
         }
     } catch (error) {
         console.error('Error conectando con Supabase, usando productos por defecto:', error);
@@ -36,7 +34,7 @@ async function inicializarProductos() {
 // Función para actualizar stock en Supabase
 async function actualizarStockSupabase(id, nuevoStock) {
     try {
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('productos')
             .update({ stock: nuevoStock })
             .eq('id', id);
@@ -54,11 +52,14 @@ let carrito = [];
 let productoSeleccionado = null;
 
 // Inicializar la página
-document.addEventListener('DOMContentLoaded', () => {
-    inicializarProductos();
-    cargarCarritoLocal();
+document.addEventListener('DOMContentLoaded', async () => {
+    await inicializarProductos();
     cargarProductos('todos');
-    actualizarCarritoUI();
+    
+    // Cargar carrito en segundo plano (no bloquea UI)
+    cargarCarritoBackend().then(() => {
+        actualizarCarritoUI();
+    });
     
     // Escuchar cambios en localStorage para actualizaciones en tiempo real
     window.addEventListener('storage', async (e) => {
@@ -84,17 +85,142 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Cargar carrito del localStorage
-function cargarCarritoLocal() {
-    const carritoGuardado = localStorage.getItem('AZADOSk_carrito');
-    if (carritoGuardado) {
-        carrito = JSON.parse(carritoGuardado);
+// ==================== CARRITO PERSISTENTE EN SUPABASE ====================
+
+// Generar o recuperar session_id único para el dispositivo
+function getSessionId() {
+    let sessionId = localStorage.getItem('AZADOSk_session_id');
+    if (!sessionId) {
+        sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('AZADOSk_session_id', sessionId);
+    }
+    return sessionId;
+}
+
+// Cargar carrito desde Supabase (con fallback a localStorage)
+async function cargarCarritoBackend() {
+    try {
+        const sessionId = getSessionId();
+        
+        // Intentar cargar desde Supabase
+        const { data, error } = await supabaseClient
+            .from('carritos')
+            .select('*, productos(*)')
+            .eq('sesion_id', sessionId);
+        
+        if (error) {
+            console.error('Error cargando carrito de Supabase:', error);
+            throw error;
+        }
+        
+        if (data && data.length > 0) {
+            // Convertir datos de Supabase al formato del carrito
+            carrito = data.map(item => ({
+                id: item.producto_id,
+                nombre: item.productos?.nombre || 'Producto',
+                precio: item.productos?.precio || 0,
+                cantidad: item.cantidad,
+                emoji: item.productos?.emoji || '🍽️',
+                imagen_url: item.productos?.imagen_url || null
+            }));
+             ('Carrito cargado desde Supabase:', carrito.length, 'items');
+        } else {
+            // Si no hay datos en Supabase, intentar localStorage (migración)
+            const carritoGuardado = localStorage.getItem('AZADOSk_carrito');
+            if (carritoGuardado) {
+                carrito = JSON.parse(carritoGuardado);
+                // Sincronizar con Supabase
+                await sincronizarCarritoCompleto();
+                 ('Carrito migrado de localStorage a Supabase');
+            }
+        }
+    } catch (error) {
+        console.error('Error cargando carrito del backend:', error);
+        // Fallback a localStorage
+        const carritoGuardado = localStorage.getItem('AZADOSk_carrito');
+        if (carritoGuardado) {
+            carrito = JSON.parse(carritoGuardado);
+        }
     }
 }
 
-// Guardar carrito en localStorage
+// Guardar item individual en Supabase
+async function guardarCarritoBackend(productoId, cantidad) {
+    try {
+        const sessionId = getSessionId();
+        
+        if (cantidad <= 0) {
+            // Eliminar item si cantidad es 0
+            await supabaseClient
+                .from('carritos')
+                .delete()
+                .eq('sesion_id', sessionId)
+                .eq('producto_id', productoId);
+        } else {
+            // Insertar o actualizar (upsert)
+            await supabaseClient
+                .from('carritos')
+                .upsert({
+                    sesion_id: sessionId,
+                    producto_id: productoId,
+                    cantidad: cantidad,
+                    actualizado_en: new Date().toISOString()
+                }, {
+                    onConflict: 'sesion_id,producto_id'
+                });
+        }
+        
+        // Backup en localStorage
+        localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+    } catch (error) {
+        console.error('Error guardando carrito en backend:', error);
+        // Fallback: solo localStorage
+        localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+    }
+}
+
+// Sincronizar carrito completo con Supabase
+async function sincronizarCarritoCompleto() {
+    try {
+        const sessionId = getSessionId();
+        
+        // Eliminar carrito actual en Supabase
+        await supabaseClient
+            .from('carritos')
+            .delete()
+            .eq('sesion_id', sessionId);
+        
+        // Insertar items actuales
+        if (carrito.length > 0) {
+            const items = carrito.map(item => ({
+                sesion_id: sessionId,
+                producto_id: item.id,
+                cantidad: item.cantidad,
+                creado_en: new Date().toISOString(),
+                actualizado_en: new Date().toISOString()
+            }));
+            
+            await supabaseClient
+                .from('carritos')
+                .insert(items);
+        }
+        
+        // Backup en localStorage
+        localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+    } catch (error) {
+        console.error('Error sincronizando carrito:', error);
+        // Fallback: solo localStorage
+        localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+    }
+}
+
+// Funciones legacy para compatibilidad
+function cargarCarritoLocal() {
+    // Ahora se maneja en cargarCarritoBackend
+}
+
 function guardarCarritoLocal() {
-    localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+    // Ahora se maneja en sincronizarCarritoCompleto
 }
 
 // Cargar productos
@@ -110,11 +236,20 @@ function cargarProductos(categoria) {
         const stockDisponible = producto.stock || 0;
         const agotado = stockDisponible <= 0;
         
+        // Mostrar imagen si existe, sino el emoji
+        const imagenHtml = producto.imagen_url 
+            ? `<img src="${producto.imagen_url}" alt="${producto.nombre}" class="product-img" onclick="event.stopPropagation(); abrirLightbox('${producto.imagen_url}')" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span style="display: none;">${producto.emoji}</span>`
+            : producto.emoji;
+        
         const card = document.createElement('div');
         card.className = `product-card ${agotado ? 'agotado' : ''}`;
+        card.style.cursor = agotado ? 'not-allowed' : 'pointer';
+        if (!agotado) {
+            card.onclick = () => abrirProducto(producto.id);
+        }
         card.innerHTML = `
-            <div class="product-image">
-                ${producto.emoji}
+            <div class="product-image" ${!agotado ? `onclick="event.stopPropagation(); abrirProducto(${producto.id})"` : ''}>
+                ${imagenHtml}
                 ${agotado ? '<span class="agotado-badge">AGOTADO</span>' : ''}
             </div>
             <div class="product-info">
@@ -124,7 +259,7 @@ function cargarProductos(categoria) {
                 <div class="product-footer">
                     <span class="product-price">$${formatearPrecio(producto.precio)}</span>
                     <span class="product-stock">Stock: ${stockDisponible}</span>
-                    <button class="product-btn" onclick="abrirProducto(${producto.id})" ${agotado ? 'disabled' : ''}>
+                    <button class="product-btn" onclick="event.stopPropagation(); abrirProducto(${producto.id})" ${agotado ? 'disabled' : ''}>
                         ${agotado ? 'Agotado' : 'Ver'}
                     </button>
                 </div>
@@ -175,6 +310,16 @@ function abrirProducto(id) {
         document.getElementById('productDetails').textContent = productoSeleccionado.detalles || 'Información no disponible';
         document.getElementById('quantity').value = 1;
         document.getElementById('quantity').max = maxCantidad;
+        
+        // Mostrar imagen o emoji en el modal
+        const imagenModal = document.getElementById('productImage');
+        if (imagenModal) {
+            if (productoSeleccionado.imagen_url) {
+                imagenModal.innerHTML = `<img src="${productoSeleccionado.imagen_url}" alt="${productoSeleccionado.nombre}" onclick="abrirLightbox('${productoSeleccionado.imagen_url}')" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; cursor: zoom-in;">`;
+            } else {
+                imagenModal.innerHTML = `<span style="font-size: 80px;">${productoSeleccionado.emoji}</span>`;
+            }
+        }
         
         // Mostrar stock disponible
         document.getElementById('productStock').textContent = `Stock disponible: ${stockDisponible}`;
@@ -240,7 +385,13 @@ async function agregarAlCarrito() {
         mostrarNotificacion(`${productoSeleccionado.nombre} agregado al carrito`, 'success');
         cerrarModal();
         actualizarCarritoUI();
-        guardarCarritoLocal();
+        
+        // Guardar en backend (sin await - no bloquea UI)
+        const itemCarrito = carrito.find(item => item.id === productoSeleccionado.id);
+        if (itemCarrito) {
+            guardarCarritoBackend(productoSeleccionado.id, itemCarrito.cantidad);
+        }
+        
         cargarProductos('todos'); // Recargar productos para mostrar stock actualizado
     }
 }
@@ -289,8 +440,10 @@ function abrirCarrito() {
                     <div class="cart-item-name">${item.nombre}</div>
                     <div class="cart-item-qty">Cantidad: ${item.cantidad}</div>
                 </div>
-                <div class="cart-item-price">$${formatearPrecio(item.precio * item.cantidad)}</div>
-                <button class="cart-remove" onclick="eliminarDelCarrito(${item.id})">Eliminar</button>
+                <div class="cart-item-actions">
+                    <div class="cart-item-price">$${formatearPrecio(item.precio * item.cantidad)}</div>
+                    <button class="cart-remove" onclick="eliminarDelCarrito(${item.id})">Eliminar</button>
+                </div>
             </div>
         `).join('');
     }
@@ -316,7 +469,10 @@ async function eliminarDelCarrito(id) {
     
     carrito = carrito.filter(item => item.id !== id);
     actualizarCarritoUI();
-    guardarCarritoLocal();
+    
+    // Eliminar del backend (cantidad 0 = eliminar) - sin await
+    guardarCarritoBackend(id, 0);
+    
     abrirCarrito();
     cargarProductos('todos'); // Recargar para mostrar stock actualizado
 }
@@ -327,7 +483,7 @@ function cerrarCarrito() {
 }
 
 // Confirmar pedido por WhatsApp
-function confirmarPedidoWhatsApp() {
+async function confirmarPedidoWhatsApp() {
     if (carrito.length === 0) {
         mostrarNotificacion('Tu carrito está vacío', 'error');
         return;
@@ -345,7 +501,7 @@ function confirmarPedidoWhatsApp() {
 
     // Vaciar carrito después de confirmar
     carrito = [];
-    guardarCarritoLocal();
+    sincronizarCarritoCompleto(); // Vaciar en backend - sin await
     actualizarCarritoUI();
     cerrarCarrito();
     cargarProductos('todos'); // Recargar para mostrar stock actualizado
@@ -364,7 +520,7 @@ function cerrarClienteModal() {
 }
 
 // Confirmar pedido con información del cliente
-function confirmarPedidoCliente(event) {
+async function confirmarPedidoCliente(event) {
     event.preventDefault();
 
     if (carrito.length === 0) {
@@ -390,7 +546,7 @@ function confirmarPedidoCliente(event) {
 
     // Vaciar carrito después de confirmar
     carrito = [];
-    guardarCarritoLocal();
+    sincronizarCarritoCompleto(); // Vaciar en backend - sin await
     actualizarCarritoUI();
     cerrarClienteModal();
     cargarProductos('todos'); // Recargar para mostrar stock actualizado
@@ -421,6 +577,33 @@ window.addEventListener('click', (event) => {
         cerrarCarrito();
     }
     if (event.target === clienteModal) {
+        cerrarClienteModal();
+    }
+});
+
+// ==================== LIGHTBOX ====================
+
+function abrirLightbox(urlImagen) {
+    if (!urlImagen) return;
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    lightboxImg.src = urlImagen;
+    lightbox.classList.add('show');
+    document.body.style.overflow = 'hidden'; // Evitar scroll
+}
+
+function cerrarLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    lightbox.classList.remove('show');
+    document.body.style.overflow = ''; // Restaurar scroll
+}
+
+// Cerrar lightbox con tecla ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        cerrarLightbox();
+        cerrarModal();
+        cerrarCarrito();
         cerrarClienteModal();
     }
 });
@@ -531,3 +714,287 @@ function getProductosPorDefecto() {
         }
     ];
 }
+
+// ==================== SEGURIDAD ADMIN ====================
+// Clave hardcodeada como fallback (solo si no hay conexión a Supabase)
+const ADMIN_ACCESS_KEY_FALLBACK = 'azadosk2024admin';
+const ADMIN_SESSION_KEY = 'AZADOSk_admin_access_verified';
+const ADMIN_SESSION_DURATION = 30 * 60 * 1000; // 30 minutos
+
+// Variable para almacenar la clave obtenida de Supabase
+let adminAccessKeyFromSupabase = null;
+
+// Función para obtener la clave de acceso desde Supabase (usa instancia global)
+async function obtenerClaveAdminDesdeSupabase() {
+    try {
+        // Usar instancia global supabaseClient (ya inicializada al principio del archivo)
+        const { data, error } = await supabaseClient
+            .from('configuracion')
+            .select('valor')
+            .eq('clave', 'admin_access_key')
+            .single();
+        
+        if (error || !data) {
+            console.warn('No se pudo obtener clave de Supabase, usando fallback');
+            return ADMIN_ACCESS_KEY_FALLBACK;
+        }
+        
+        return data.valor || ADMIN_ACCESS_KEY_FALLBACK;
+    } catch (error) {
+        console.error('Error obteniendo clave de Supabase:', error);
+        return ADMIN_ACCESS_KEY_FALLBACK;
+    }
+}
+
+async function abrirModalSeguridad(event) {
+    if (event) event.preventDefault();
+    
+    // Verificar si ya tiene sesión válida
+    if (verificarSesionAdmin()) {
+        window.location.href = 'admin.html';
+        return;
+    }
+    
+    // Obtener clave desde Supabase (o usar fallback)
+    if (!adminAccessKeyFromSupabase) {
+        adminAccessKeyFromSupabase = await obtenerClaveAdminDesdeSupabase();
+    }
+    
+    const modal = document.getElementById('adminSecurityModal');
+    modal.classList.add('show');
+    document.getElementById('adminClave').value = '';
+    document.getElementById('adminClave').focus();
+    document.getElementById('adminErrorMsg').textContent = '';
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalSeguridad() {
+    const modal = document.getElementById('adminSecurityModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+async function verificarClaveAdmin(event) {
+    event.preventDefault();
+    
+    const claveInput = document.getElementById('adminClave');
+    const clave = claveInput.value.trim();
+    const errorMsg = document.getElementById('adminErrorMsg');
+    
+    // Si no tenemos la clave de Supabase, obtenerla
+    if (!adminAccessKeyFromSupabase) {
+        adminAccessKeyFromSupabase = await obtenerClaveAdminDesdeSupabase();
+    }
+    
+    if (clave === adminAccessKeyFromSupabase) {
+        // Crear sesión válida
+        crearSesionAdmin();
+        cerrarModalSeguridad();
+        window.location.href = 'admin.html';
+    } else {
+        errorMsg.textContent = '❌ Clave incorrecta. Acceso denegado.';
+        claveInput.value = '';
+        claveInput.focus();
+        
+        // Efecto de shake en el input
+        claveInput.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+            claveInput.style.animation = '';
+        }, 500);
+    }
+}
+
+function crearSesionAdmin() {
+    const sessionData = {
+        verified: true,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + ADMIN_SESSION_DURATION
+    };
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+}
+
+function verificarSesionAdmin() {
+    const sessionStr = sessionStorage.getItem(ADMIN_SESSION_KEY);
+    if (!sessionStr) return false;
+    
+    try {
+        const session = JSON.parse(sessionStr);
+        
+        // Verificar si expiró
+        if (Date.now() > session.expiresAt) {
+            sessionStorage.removeItem(ADMIN_SESSION_KEY);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function limpiarSesionAdmin() {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('adminSecurityModal');
+        if (modal && modal.classList.contains('show')) {
+            cerrarModalSeguridad();
+        }
+    }
+});
+
+// Verificar sesión al cargar admin.html
+if (window.location.pathname.includes('admin.html')) {
+    // Solo verificar si viene del cliente, no si viene de login de Supabase
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromLogin = urlParams.get('from') === 'login';
+    
+    if (!fromLogin && !verificarSesionAdmin()) {
+        // Redirigir al cliente si no tiene sesión válida
+        window.location.href = 'index.html?access=denied';
+    }
+}
+
+// Agregar animación shake CSS dinámicamente
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+`;
+document.head.appendChild(shakeStyle);
+
+// ==================== HORARIOS DEL NEGOCIO ====================
+let horariosData = null;
+
+// Cargar horarios al iniciar
+async function cargarHorariosNegocio() {
+    try {
+        const { data: horarios, error } = await supabaseClient
+            .from('horarios')
+            .select('*')
+            .order('dia_semana');
+        
+        if (error) {
+            console.warn('Error cargando horarios:', error);
+            return;
+        }
+        
+        horariosData = horarios;
+        actualizarEstadoNegocio();
+        
+    } catch (error) {
+        console.error('Error cargando horarios:', error);
+    }
+}
+
+function actualizarEstadoNegocio() {
+    if (!horariosData) return;
+    
+    const ahora = new Date();
+    const diaSemana = ahora.getDay();
+    const horaActual = ahora.getHours() + ':' + String(ahora.getMinutes()).padStart(2, '0');
+    
+    const horarioHoy = horariosData.find(h => h.dia_semana === diaSemana);
+    const estadoBadge = document.getElementById('estadoNegocio');
+    
+    if (!estadoBadge) return;
+    
+    if (!horarioHoy || !horarioHoy.abierto) {
+        estadoBadge.textContent = '🔴 Cerrado';
+        estadoBadge.className = 'estado-badge estado-cerrado';
+        return;
+    }
+    
+    const abierto = horaActual >= horarioHoy.hora_apertura && horaActual <= horarioHoy.hora_cierre;
+    
+    if (abierto) {
+        estadoBadge.textContent = '🟢 Abierto';
+        estadoBadge.className = 'estado-badge estado-abierto';
+    } else {
+        estadoBadge.textContent = '🔴 Cerrado';
+        estadoBadge.className = 'estado-badge estado-cerrado';
+    }
+}
+
+function mostrarHorariosModal(event) {
+    if (event) event.stopPropagation();
+    
+    const modal = document.getElementById('horariosModal');
+    const lista = document.getElementById('horariosLista');
+    const estadoFooter = document.getElementById('estadoHorario');
+    
+    if (!horariosData) {
+        lista.innerHTML = '<p style="text-align: center; color: #666;">Cargando horarios...</p>';
+        cargarHorariosNegocio().then(() => mostrarHorariosModal());
+        return;
+    }
+    
+    const diasNombre = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const diaHoy = new Date().getDay();
+    
+    lista.innerHTML = diasNombre.map((dia, index) => {
+        const horario = horariosData.find(h => h.dia_semana === index);
+        const esHoy = index === diaHoy;
+        const claseHoy = esHoy ? 'hoy' : '';
+        
+        let horaTexto;
+        if (!horario || !horario.abierto) {
+            horaTexto = '<span class="horario-hora-cliente cerrado">Cerrado</span>';
+        } else {
+            horaTexto = `<span class="horario-hora-cliente">${horario.hora_apertura} - ${horario.hora_cierre}</span>`;
+        }
+        
+        return `
+            <div class="horario-item-cliente ${claseHoy}">
+                <span class="horario-dia-cliente">${dia} ${esHoy ? '(Hoy)' : ''}</span>
+                ${horaTexto}
+            </div>
+        `;
+    }).join('');
+    
+    // Estado en footer
+    const estadoBadge = document.getElementById('estadoNegocio');
+    if (estadoFooter && estadoBadge) {
+        estadoFooter.innerHTML = estadoBadge.outerHTML;
+    }
+    
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarHorariosModal(event) {
+    if (event) {
+        // Si clickeó en el contenido (no en el fondo), no cerrar
+        if (event.target.closest('.horarios-modal-content') && !event.target.classList.contains('horarios-close')) {
+            return;
+        }
+    }
+    
+    const modal = document.getElementById('horariosModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// Actualizar estado cada minuto
+setInterval(actualizarEstadoNegocio, 60000);
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('horariosModal');
+        if (modal && modal.classList.contains('show')) {
+            cerrarHorariosModal();
+        }
+    }
+});
+
+// Cargar horarios al iniciar página
+document.addEventListener('DOMContentLoaded', () => {
+    cargarHorariosNegocio();
+});

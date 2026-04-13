@@ -177,7 +177,7 @@ body {
 .hero {
     background: linear-gradient(135deg, rgba(255, 107, 53, 0.9) 0%, rgba(0, 78, 137, 0.9) 100%),
                 url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="%23FFF" opacity="0.1"/><circle cx="80" cy="80" r="3" fill="%23FFF" opacity="0.1"/></svg>');
-    min-height: 500px;
+    min-height: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -190,7 +190,7 @@ body {
 .hero::before {
     content: '🔥';
     position: absolute;
-    font-size: 300px;
+    font-size: 180px;
     opacity: 0.1;
     top: -50px;
     right: -50px;
@@ -221,7 +221,7 @@ body {
 }
 
 .hero h2 {
-    font-size: 48px;
+    font-size: 36px;
     margin-bottom: 20px;
     text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
 }
@@ -322,6 +322,7 @@ body {
     font-size: 80px;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .product-image::after {
@@ -434,6 +435,8 @@ body {
 
 .modal-product {
     max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 
 .close {
@@ -566,6 +569,12 @@ body {
     font-weight: 700;
     color: var(--primary-color);
     margin: 0 10px;
+}
+
+.cart-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .cart-remove {
@@ -751,7 +760,11 @@ body {
     }
 
     .hero h2 {
-        font-size: 32px;
+        font-size: 28px;
+    }
+    
+    .hero {
+        min-height: 220px;
     }
 
     .hero p {
@@ -786,20 +799,115 @@ body {
 
 @media (max-width: 480px) {
     .logo {
-        font-size: 22px;
+        font-size: 20px;
+    }
+    
+    .tagline {
+        font-size: 12px;
     }
 
     .hero::before {
-        font-size: 150px;
+        font-size: 100px;
+    }
+    
+    .hero h2 {
+        font-size: 24px;
+    }
+    
+    .hero p {
+        font-size: 14px;
     }
 
     .products-grid {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 15px;
+    }
+    
+    .product-card {
+        margin: 0 10px;
+    }
+    
+    .product-image {
+        height: 160px;
     }
 
     .cart-count {
         display: none;
+    }
+    
+    .carrito-icon {
+        font-size: 24px;
+    }
+    
+    .modal-product {
+        width: 95%;
+        padding: 20px;
+        max-height: 90vh;
+    }
+    
+    .product-modal-image {
+        height: 150px;
+    }
+    
+    .quantity-selector {
+        flex-wrap: wrap;
+    }
+    
+    .filter-buttons {
+        padding: 0 10px;
+    }
+    
+    .section-title {
+        font-size: 24px;
+    }
+}
+
+/* Tablet landscape y laptops pequeñas */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .hero {
+        min-height: 250px;
+    }
+}
+
+/* Pantallas grandes */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1200px;
+    }
+    
+    .products-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Mejoras para carrito en móvil */
+@media (max-width: 480px) {
+    .cart-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .cart-item-info {
+        width: 100%;
+    }
+    
+    .cart-item-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .cart-total {
+        font-size: 18px;
+    }
+    
+    .btn-full {
+        padding: 12px;
+        font-size: 16px;
     }
 }
 
@@ -852,4 +960,367 @@ body {
     color: var(--secondary-color);
     font-weight: 600;
     margin-top: 10px;
+}
+
+/* ==================== IMÁGENES DE PRODUCTOS ==================== */
+.product-image img.product-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.product-modal-image {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.product-modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ==================== HORARIO STATUS ==================== */
+.horario-status {
+    cursor: pointer;
+    margin-right: 15px;
+    transition: transform 0.2s;
+}
+
+.horario-status:hover {
+    transform: scale(1.05);
+}
+
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    transition: all 0.3s;
+}
+
+.estado-abierto {
+    background: #28a745;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.estado-cerrado {
+    background: #dc3545;
+    color: white;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Modal de Horarios */
+.horarios-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1500;
+    justify-content: center;
+    align-items: center;
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+.horarios-modal.show {
+    display: flex;
+}
+
+.horarios-modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: horarioSlideIn 0.3s ease;
+}
+
+@keyframes horarioSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.horarios-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+}
+
+.horarios-close:hover {
+    color: #333;
+}
+
+.horarios-modal-content h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.horarios-lista {
+    margin-bottom: 20px;
+}
+
+.horario-item-cliente {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.horario-item-cliente:last-child {
+    border-bottom: none;
+}
+
+.horario-item-cliente.hoy {
+    background: #fff3cd;
+    margin: 0 -10px;
+    padding: 12px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.horario-dia-cliente {
+    color: #333;
+}
+
+.horario-hora-cliente {
+    color: #666;
+    font-size: 14px;
+}
+
+.horario-hora-cliente.cerrado {
+    color: #dc3545;
+    font-style: italic;
+}
+
+.estado-horario-footer {
+    text-align: center;
+    padding-top: 15px;
+    border-top: 2px solid #FF6B35;
+}
+
+.estado-horario-footer .estado-badge {
+    font-size: 14px;
+    padding: 8px 16px;
+}
+
+/* Responsive horario */
+@media (max-width: 768px) {
+    .horario-status {
+        margin-right: 10px;
+    }
+    
+    .estado-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .horarios-modal-content {
+        margin: 20px;
+        width: calc(100% - 40px);
+    }
+}
+
+/* ==================== ADMIN SECURITY MODAL ==================== */
+.admin-security-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+
+.admin-security-modal.show {
+    display: flex;
+}
+
+.admin-security-content {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: securitySlideIn 0.3s ease;
+}
+
+@keyframes securitySlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.admin-security-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+}
+
+.admin-security-close:hover {
+    color: #333;
+}
+
+.admin-security-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+.admin-security-content h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.admin-security-content p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.admin-security-content .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.admin-security-content label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.admin-security-content input {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.admin-security-content input:focus {
+    outline: none;
+    border-color: #FF6B35;
+}
+
+.admin-error-msg {
+    color: #dc3545;
+    font-size: 13px;
+    margin-bottom: 15px;
+    min-height: 20px;
+}
+
+.admin-security-content .btn {
+    padding: 14px 30px;
+    font-size: 16px;
+}
+
+/* Bloqueo de acceso directo */
+.admin-blocked {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* ==================== LIGHTBOX ==================== */
+.lightbox {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox.show {
+    display: flex;
+}
+
+.lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 2001;
+}
+
+.lightbox-close:hover {
+    color: var(--primary-color);
+}
+
+/* Cursor pointer en imágenes clickeables */
+.product-image img.product-img,
+.product-modal-image img {
+    cursor: zoom-in;
 }
