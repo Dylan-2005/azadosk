@@ -1023,6 +1023,46 @@ body {
     object-fit: cover;
 }
 
+/* ==================== MODAL BASE ==================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease-in;
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    position: relative;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* ==================== MODAL MODERNO ==================== */
 .modal-content.modal-modern {
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
@@ -1726,15 +1766,22 @@ body {
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 25px;
 }
 
 .dashboard-card {
     background: white;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 25px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border: 1px solid #f0f0f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
 }
 
 .dashboard-card h3 {
@@ -1927,6 +1974,22 @@ body {
 .form-check span {
     font-size: 14px;
     color: var(--text-dark);
+}
+
+/* Mensaje de clave actualizada */
+.clave-mensaje {
+    display: none;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #d4edda;
+    color: #155724;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.clave-mensaje.error {
+    background: #f8d7da;
+    color: #721c24;
 }
 
 /* Pedidos */

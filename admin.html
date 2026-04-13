@@ -6,6 +6,7 @@
     <title>Panel Administrativo - AZADOS K</title>
     <link rel="stylesheet" href="admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="admin.js"></script>
 </head>
 <body>
@@ -377,6 +378,29 @@
                         <button class="btn btn-info" onclick="resetearProductos()" id="resetBtn">🔄 Restaurar Datos Originales</button>
                     </div>
                 </section>
+
+                <!-- SECCIÓN CATEGORÍAS -->
+                <section class="content-section" id="categoriasSection">
+                    <div class="section-header">
+                        <h2>Gestión de Categorías</h2>
+                        <button class="btn btn-primary" onclick="abrirModalCategoria()">
+                            ➕ Nueva Categoría
+                        </button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>Orden</th>
+                                    <th>Emoji</th>
+                                    <th>Nombre</th>
+                                    <th>Slug</th>
+                                    <th>Descripción</th>
+                                    <th>Color</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
                             </thead>
                             <tbody id="categoriasTableBody">
                                 <!-- Se llenará con JavaScript -->
@@ -673,11 +697,8 @@
                             <div class="form-group">
                                 <label for="confAdminClave">Clave de Acceso al Admin</label>
                                 <input type="password" id="confAdminClave" placeholder="Ingresa nueva clave (dejar vacío para mantener actual)">
-                                <small> Esta clave es requerida para acceder al panel administrativo desde el engranaje.</small>
-                                <button type="button" class="btn btn-warning btn-sm btn-mostrar-clave" onclick="mostrarClaveActual()">
-                                    Mostrar clave actual
-                                </button>
-                                <div id="claveActualDisplay" class="clave-display clave-display-hidden"></div>
+                                <small>🔒 Esta clave protege el acceso al panel administrativo. Deja vacío para mantener la clave actual.</small>
+                                <div id="claveMensaje" class="clave-mensaje"></div>
                             </div>
                         </div>
 

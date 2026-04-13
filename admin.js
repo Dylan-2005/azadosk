@@ -1,8 +1,43 @@
 // ==================== CONFIGURACIÓN ====================
-// Inicializar Supabase
-const supabaseUrl = 'https://pgprfmrormidbbvrnwaa.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncHJmbXJvcm1pZGJidnJud2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDIyODEsImV4cCI6MjA5MTQxODI4MX0.r0Igx_uWxf38Bwa7kTAjjd2LY6KCgqRictEMXWcyVvQ';
-const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+// Las credenciales de Supabase se cargan desde supabase-config.js
+const supabaseClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.key);
+
+// ==================== UTILIDADES SEGURAS ====================
+function safeLog(message, data) {
+    // En producción, no mostrar logs en consola
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        return;
+    }
+    if (data) {
+        // Filtrar datos sensibles
+        const safeData = JSON.parse(JSON.stringify(data));
+        const sensitiveKeys = ['password', 'clave', 'token', 'key', 'secret', 'auth', 'supabaseKey', 'supabaseUrl'];
+        function filterSensitive(obj) {
+            if (typeof obj !== 'object' || obj === null) return obj;
+            for (let key in obj) {
+                if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk))) {
+                    obj[key] = '***HIDDEN***';
+                } else if (typeof obj[key] === 'object') {
+                    filterSensitive(obj[key]);
+                }
+            }
+            return obj;
+        }
+        console.log(message, filterSensitive(safeData));
+    } else {
+        console.log(message);
+    }
+}
+
+function safeError(message, error) {
+    // Log seguro de errores sin exponer datos sensibles
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        return;
+    }
+    const safeMessage = message || 'Error';
+    const safeErrorMsg = error?.message || error?.toString() || 'Unknown error';
+    console.error(safeMessage, safeErrorMsg);
+}
 
 // Claves de localStorage
 const LS_PRODUCTOS = 'AZADOSk_productos';
@@ -49,7 +84,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.classList.remove('verificando-sesion');
 
     // Cargar productos
-    cargarProductos();
+    await cargarProductos();
+    
+    // Cargar dashboard con datos de Supabase
+    await cargarDashboard();
+    
+    // Auto-refresh del dashboard cada 30 segundos para mantener datos actualizados
+    setInterval(async () => {
+        if (document.getElementById('dashboardSection')?.classList.contains('active')) {
+            await cargarDashboard();
+        }
+    }, 30000);
 });
 
 // ==================== SEGURIDAD CLIENTE ====================
@@ -102,7 +147,7 @@ function guardarSesionLocal(user) {
         };
         localStorage.setItem(LS_SESSION, JSON.stringify(sessionData));
     } catch (error) {
-        console.error('Error guardando sesión local:', error);
+        safeError('Error guardando sesión local:', error);
     }
 }
 
@@ -121,7 +166,7 @@ function obtenerSesionLocal() {
         
         return session;
     } catch (error) {
-        console.error('Error obteniendo sesión local:', error);
+        safeError('Error obteniendo sesión local:', error);
         return null;
     }
 }
@@ -140,7 +185,7 @@ async function restaurarSesion() {
             const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
             
             if (refreshError || !refreshData.user) {
-                console.log('No se pudo restaurar sesión');
+                safeLog('No se pudo restaurar sesión');
                 localStorage.removeItem(LS_SESSION);
                 return false;
             }
@@ -161,7 +206,7 @@ async function restaurarSesion() {
         
         return false;
     } catch (error) {
-        console.error('Error restaurando sesión:', error);
+        safeError('Error restaurando sesión:', error);
         return false;
     }
 }
@@ -235,10 +280,10 @@ async function verificarRolAdmin(userId) {
             .single();
 
          ('Verificando rol para userId:', userId);
-         ('Resultado:', data, 'Error:', error);
+        safeLog('Verificación rol admin - resultado:', { tieneData: !!data, role: data?.role });
         return !error && data && data.role === 'admin';
     } catch (error) {
-        console.error('Error verificando rol:', error);
+        safeError('Error verificando rol:', error);
         return false;
     }
 }
@@ -254,9 +299,9 @@ async function hacerAdmin() {
                 .eq('id', user.id);
 
             if (error) {
-                console.error('Error actualizando rol:', error);
+                safeError('Error actualizando rol:', error);
             } else {
-                 ('Rol actualizado a admin');
+                safeLog('Rol actualizado a admin');
                 location.reload(); // Recargar página
             }
         }
@@ -275,9 +320,9 @@ async function crearPerfil() {
                 .insert({ id: user.id, email: user.email, role: 'admin' });
 
             if (error) {
-                console.error('Error creando perfil:', error);
+                safeError('Error creando perfil:', error);
             } else {
-                 ('Perfil creado');
+                safeLog('Perfil creado');
                 location.reload();
             }
         }
@@ -318,9 +363,9 @@ async function depurarUsuario() {
             if (debugDiv) debugDiv.innerHTML = 'No hay usuario autenticado';
         }
     } catch (error) {
-        console.error('Error en depuración:', error);
+        safeError('Error en depuración:', error);
         const debugDiv = document.getElementById('debugInfo');
-        if (debugDiv) debugDiv.innerHTML = `Error: ${error.message}`;
+        if (debugDiv) debugDiv.innerHTML = `Error de depuración`;
     }
 }
 
@@ -431,7 +476,7 @@ async function cargarProductos() {
             .select('*');
 
         if (error) {
-            console.error('Error cargando productos desde Supabase:', error);
+            safeError('Error cargando productos desde Supabase:', error);
             productos = getProductosPorDefectoAdmin();
         } else if (data && data.length > 0) {
             productos = data;
@@ -443,7 +488,7 @@ async function cargarProductos() {
         cargarTablaProductos();
         actualizarEstadisticas();
     } catch (error) {
-        console.error('Error conectando con Supabase:', error);
+        safeError('Error conectando con Supabase:', error);
         productos = getProductosPorDefectoAdmin();
         cargarTablaProductos();
         actualizarEstadisticas();
@@ -475,7 +520,7 @@ async function guardarProductosLocal() {
             .insert(productos);
 
         if (error) {
-            console.error('Error guardando productos en Supabase:', error);
+            safeError('Error guardando productos en Supabase:', error);
             mostrarNotificacion('Error al guardar productos', 'error');
         } else {
             // Notificar actualización
@@ -597,7 +642,7 @@ async function subirImagenProducto(file, productoId) {
             });
 
         if (uploadError) {
-            console.error('Error subiendo imagen:', uploadError);
+            safeError('Error subiendo imagen:', uploadError);
             throw uploadError;
         }
 
@@ -848,10 +893,27 @@ function cambiarSeccion(seccion) {
     });
 
     // Mostrar sección seleccionada
-    document.getElementById(seccion + 'Section').classList.add('active');
+    const seccionElement = document.getElementById(seccion + 'Section');
+    if (seccionElement) {
+        seccionElement.classList.add('active');
+    }
 
-    // Activar botón
-    event.target.classList.add('active');
+    // Activar botón correspondiente basado en la sección
+    const botones = document.querySelectorAll('.nav-btn');
+    const indexMap = {
+        'dashboard': 0,
+        'productos': 1,
+        'categorias': 2,
+        'horarios': 3,
+        'ubicacion': 4,
+        'pedidos': 5,
+        'configuracion': 6
+    };
+    
+    const btnIndex = indexMap[seccion];
+    if (btnIndex !== undefined && botones[btnIndex]) {
+        botones[btnIndex].classList.add('active');
+    }
 
     // Cargar datos si es necesario
     if (seccion === 'productos') {
@@ -986,7 +1048,7 @@ async function cargarDashboard() {
         document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
         
     } catch (error) {
-        console.error('Error cargando dashboard:', error);
+        safeError('Error cargando dashboard:', error);
     }
 }
 
@@ -1028,7 +1090,7 @@ async function cargarEstadoNegocio() {
         estadoDiv.className = `dash-status ${abierto ? 'abierto' : 'cerrado'}`;
         
     } catch (error) {
-        console.error('Error cargando estado:', error);
+        safeError('Error cargando estado:', error);
     }
 }
 
@@ -1491,52 +1553,36 @@ async function cargarConfiguracion() {
         document.getElementById('confPermitirPedidos').checked = conf.permitir_pedidos === 'true';
         document.getElementById('confTerminos').value = conf.terminos_condiciones || '';
         
-        // Guardar clave actual en memoria para referencia
-        window.adminAccessKeyActual = conf.admin_access_key || '';
+        // NOTA: Por seguridad, NO guardamos la clave en memoria ni la mostramos
         
     } catch (error) {
-        console.error('Error cargando configuración:', error);
+        safeError('Error cargando configuración:', error);
     }
 }
 
 // ==================== SEGURIDAD - CLAVE DE ACCESO ====================
-async function mostrarClaveActual() {
-    const display = document.getElementById('claveActualDisplay');
+// NOTA: Por seguridad, ya NO se muestra la clave actual en pantalla ni en consola.
+// Solo se permite CAMBIAR la clave por una nueva.
+
+function mostrarMensajeClave(mensaje, tipo = 'success') {
+    const mensajeDiv = document.getElementById('claveMensaje');
+    if (!mensajeDiv) return;
     
-    if (!display.classList.contains('clave-display-hidden')) {
-        display.classList.add('clave-display-hidden');
-        return;
+    mensajeDiv.textContent = mensaje;
+    mensajeDiv.style.display = 'block';
+    
+    if (tipo === 'error') {
+        mensajeDiv.style.background = '#f8d7da';
+        mensajeDiv.style.color = '#721c24';
+    } else {
+        mensajeDiv.style.background = '#d4edda';
+        mensajeDiv.style.color = '#155724';
     }
     
-    // Pedir confirmación por seguridad
-    if (!confirm('¿Estás seguro de que deseas ver la clave de acceso actual?\n\nEsta información es sensible.')) {
-        return;
-    }
-    
-    try {
-        // Obtener clave desde Supabase
-        const { data, error } = await supabaseClient
-            .from('configuracion')
-            .select('valor')
-            .eq('clave', 'admin_access_key')
-            .single();
-        
-        if (error) throw error;
-        
-        const clave = data?.valor || 'No configurada';
-        display.innerHTML = `<strong>Clave actual:</strong> <code style="font-size: 16px; background: #fff; padding: 5px 10px; border-radius: 4px;">${clave}</code>`;
-        display.classList.remove('clave-display-hidden');
-        
-        // Ocultar automáticamente después de 10 segundos
-        setTimeout(() => {
-            display.classList.add('clave-display-hidden');
-        }, 10000);
-        
-    } catch (error) {
-        console.error('Error obteniendo clave:', error);
-        display.innerHTML = '<span style="color: #dc3545;">Error al obtener clave</span>';
-        display.classList.remove('clave-display-hidden');
-    }
+    // Ocultar después de 5 segundos
+    setTimeout(() => {
+        mensajeDiv.style.display = 'none';
+    }, 5000);
 }
 
 async function guardarClaveAdmin() {
@@ -1566,12 +1612,13 @@ async function guardarClaveAdmin() {
         
         mostrarNotificacion('Clave de acceso actualizada correctamente');
         document.getElementById('confAdminClave').value = ''; // Limpiar campo
-        document.getElementById('claveActualDisplay').classList.add('clave-display-hidden');
+        mostrarMensajeClave('✅ Clave actualizada correctamente');
         return true;
         
     } catch (error) {
-        console.error('Error guardando clave:', error);
+        safeError('Error guardando clave:', error);
         mostrarNotificacion('Error al guardar la clave de acceso', 'error');
+        mostrarMensajeClave('❌ Error al guardar la clave', 'error');
         return false;
     }
 }
