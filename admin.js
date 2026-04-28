@@ -581,13 +581,25 @@ function getProductosPorDefectoAdmin() {
 
 async function guardarProductosLocal() {
     try {
-        // Primero, eliminar todos los productos existentes
-        await supabaseClient.from('productos').delete().neq('id', 0);
+        // Eliminar productos que ya no existen en el arreglo local
+        const idsActuales = productos.map(p => p.id).filter(id => id !== undefined && id !== null);
+        if (idsActuales.length > 0) {
+            const { error: deleteError } = await supabaseClient
+                .from('productos')
+                .delete()
+                .not('id', 'in', `(${idsActuales.join(',')})`);
 
-        // Insertar los productos actualizados
+            if (deleteError) {
+                safeError('Error eliminando productos obsoletos en Supabase:', deleteError);
+            }
+        } else {
+            await supabaseClient.from('productos').delete().neq('id', 0);
+        }
+
+        // Insertar o actualizar productos existentes
         const { error } = await supabaseClient
             .from('productos')
-            .insert(productos);
+            .upsert(productos, { onConflict: 'id' });
 
         if (error) {
             safeError('Error guardando productos en Supabase:', error);
@@ -1105,6 +1117,18 @@ async function cargarDashboard() {
         const ventasHoy = pedidosHoy?.reduce((sum, p) => sum + (p.total || 0), 0) || 0;
         document.getElementById('dashVentasHoy').textContent = '$' + formatearPrecio(ventasHoy);
         
+        // Pedidos aceptados y rechazados (todos los tiempos)
+        const { data: todosPedidos, error: todosPedError } = await supabaseClient
+            .from('pedidos')
+            .select('estado');
+        
+        if (!todosPedError && todosPedidos) {
+            const aceptados = todosPedidos.filter(p => ['preparando', 'listo', 'entregado'].includes(p.estado)).length;
+            const rechazados = todosPedidos.filter(p => p.estado === 'cancelado').length;
+            document.getElementById('dashPedidosAceptados').textContent = aceptados;
+            document.getElementById('dashPedidosRechazados').textContent = rechazados;
+        }
+        
         // Estado del negocio (horarios)
         await cargarEstadoNegocio();
         
@@ -1117,9 +1141,61 @@ async function cargarDashboard() {
         // Actualizar timestamp
         document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
         
+        // Iniciar suscripción en tiempo real para pedidos
+        iniciarSuscripcionPedidos();
+        
     } catch (error) {
         safeError('Error cargando dashboard:', error);
     }
+}
+
+// Función para suscripción en tiempo real de pedidos
+function iniciarSuscripcionPedidos() {
+    // Suscribirse a cambios en la tabla pedidos
+    const subscription = supabaseClient
+        .channel('pedidos_changes')
+        .on('postgres_changes', {
+            event: '*', // Escuchar todos los eventos (INSERT, UPDATE, DELETE)
+            schema: 'public',
+            table: 'pedidos'
+        }, async (payload) => {
+            console.log('Cambio en pedidos:', payload);
+            
+            // Recargar estadísticas de pedidos aceptados/rechazados
+            try {
+                const { data: todosPedidos, error } = await supabaseClient
+                    .from('pedidos')
+                    .select('estado');
+                
+                if (!error && todosPedidos) {
+                    const aceptados = todosPedidos.filter(p => ['preparando', 'listo', 'entregado'].includes(p.estado)).length;
+                    const rechazados = todosPedidos.filter(p => p.estado === 'cancelado').length;
+                    document.getElementById('dashPedidosAceptados').textContent = aceptados;
+                    document.getElementById('dashPedidosRechazados').textContent = rechazados;
+                    
+                    // También actualizar pedidos de hoy si es necesario
+                    const hoy = new Date().toISOString().split('T')[0];
+                    const { data: pedidosHoy } = await supabaseClient
+                        .from('pedidos')
+                        .select('*')
+                        .gte('creado_en', hoy + 'T00:00:00')
+                        .lt('creado_en', hoy + 'T23:59:59');
+                    
+                    document.getElementById('dashPedidosHoy').textContent = pedidosHoy?.length || 0;
+                    const ventasHoy = pedidosHoy?.reduce((sum, p) => sum + (p.total || 0), 0) || 0;
+                    document.getElementById('dashVentasHoy').textContent = '$' + formatearPrecio(ventasHoy);
+                    
+                    // Recargar últimos pedidos
+                    await cargarUltimosPedidos();
+                    
+                    // Actualizar timestamp
+                    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
+                }
+            } catch (error) {
+                console.error('Error actualizando estadísticas en tiempo real:', error);
+            }
+        })
+        .subscribe();
 }
 
 async function cargarEstadoNegocio() {

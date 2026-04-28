@@ -232,6 +232,15 @@ function cargarProductos(categoria) {
         ? productos 
         : productos.filter(p => p.categoria === categoria);
 
+    if (productosFiltrados.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-products">
+                <p>No hay productos en esta categoría.</p>
+            </div>
+        `;
+        return;
+    }
+
     productosFiltrados.forEach(producto => {
         const stockDisponible = producto.stock || 0;
         const agotado = stockDisponible <= 0;
@@ -271,13 +280,10 @@ function cargarProductos(categoria) {
 
 // Filtrar productos
 function filtrarProductos(categoria) {
-    // Actualizar botones activos
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
+        btn.classList.toggle('active', btn.dataset.category === categoria);
     });
-    event.target.classList.add('active');
 
-    // Cargar productos
     cargarProductos(categoria);
 }
 
@@ -536,7 +542,41 @@ async function confirmarPedidoCliente(event) {
     const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
     const detalles = carrito.map(item => `${item.nombre} (${item.cantidad}x)`).join(', ');
 
-    const mensaje = `Hola, quiero hacer un pedido:\n\n*Datos del cliente:*\n👤 ${nombre}\n📱 ${telefono}\n📍 ${direccion}${notas ? `\n📝 Notas: ${notas}` : ''}\n\n*Pedido:*\n${detalles}\n\n💰 Total: $${formatearPrecio(total)}`;
+    // Generar número de pedido único
+    const numeroPedido = 'PED-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+    try {
+        // Guardar pedido en Supabase
+        const { data, error } = await supabaseClient
+            .from('pedidos')
+            .insert({
+                numero_pedido: numeroPedido,
+                cliente_nombre: nombre,
+                cliente_telefono: telefono,
+                cliente_direccion: direccion,
+                cliente_notas: notas,
+                detalles: detalles,
+                total: total,
+                estado: 'pendiente',
+                creado_en: new Date().toISOString()
+            });
+
+        if (error) {
+            console.error('Error guardando pedido:', error);
+            mostrarNotificacion('Error al guardar el pedido. Inténtalo de nuevo.', 'error');
+            return;
+        }
+
+        // Actualizar estadísticas después de guardar
+        await cargarEstadisticasPedidos();
+
+    } catch (error) {
+        console.error('Error procesando pedido:', error);
+        mostrarNotificacion('Error al procesar el pedido. Inténtalo de nuevo.', 'error');
+        return;
+    }
+
+    const mensaje = `Hola, quiero hacer un pedido:\n\n*Datos del cliente:*\n👤 ${nombre}\n📱 ${telefono}\n📍 ${direccion}${notas ? `\n📝 Notas: ${notas}` : ''}\n\n*Pedido:*\n${detalles}\n\n💰 Total: $${formatearPrecio(total)}\n\n*Número de Pedido: ${numeroPedido}*`;
 
     // Número de WhatsApp
     const numeroWhatsApp = '573206364371';

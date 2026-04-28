@@ -552,13 +552,14 @@ body {
     display: flex;
     flex: 1;
     gap: 0;
+    background: #f3f6fb;
 }
 
 /* Sidebar */
 .admin-sidebar {
     width: 250px;
-    background: var(--bg-sidebar);
-    border-right: 1px solid var(--border-color);
+    background: #ffffff;
+    border-right: 1px solid #d8dde6;
     padding: 20px 0;
     position: sticky;
     top: 80px;
@@ -591,10 +592,17 @@ body {
 }
 
 .nav-btn.active {
-    background-color: rgba(255, 107, 53, 0.1);
-    color: var(--primary-color);
-    border-left-color: var(--primary-color);
+    background-color: #ff6b35;
+    color: #ffffff;
+    border-left-color: #ff6b35;
     font-weight: 700;
+    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.22);
+}
+
+.nav-btn:hover {
+    background: #fff4eb;
+    color: #ff6b35;
+    border-left-color: transparent;
 }
 
 /* Content Area */
@@ -602,6 +610,18 @@ body {
     flex: 1;
     padding: 30px;
     overflow-y: auto;
+    background: #f3f6fb;
+}
+
+.content-section {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+}
+
+.content-section.active {
+    display: block;
 }
 
 .content-section {
@@ -764,8 +784,8 @@ body {
 }
 
 .products-table thead {
-    background: var(--bg-secondary);
-    color: var(--text-light);
+    background: #ff6b35;
+    color: #ffffff;
 }
 
 .products-table th {
@@ -779,8 +799,17 @@ body {
 
 .products-table td {
     padding: 15px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #e9ecef;
     font-size: 14px;
+    background: #ffffff;
+}
+
+.products-table tbody tr {
+    background: #ffffff;
+}
+
+.products-table tbody tr:hover {
+    background-color: #fff1e8;
 }
 
 .products-table tbody tr {
@@ -2578,4 +2607,143 @@ body {
     .header-filters input {
         width: 100%;
     }
+}
+
+/* ==================== MODO OSCURO RESPETADO ==================== */
+html[data-theme="dark"] .admin-panel,
+html[data-theme="dark"] .admin-container {
+    background: #121212 !important;
+}
+
+html[data-theme="dark"] .admin-header {
+    background: #1f1f1f !important;
+    color: #f8f9fa !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme="dark"] .admin-sidebar {
+    background: #181818 !important;
+    border-right-color: #2c2c2c !important;
+}
+
+html[data-theme="dark"] .nav-btn {
+    color: #e5e7eb !important;
+}
+
+html[data-theme="dark"] .nav-btn:hover {
+    background: #2f2f2f !important;
+    color: #ffb38a !important;
+    border-left-color: transparent !important;
+}
+
+html[data-theme="dark"] .nav-btn.active {
+    background-color: #ff8a5b !important;
+    color: #101010 !important;
+    border-left-color: #ff8a5b !important;
+    box-shadow: 0 8px 20px rgba(255, 138, 91, 0.28) !important;
+}
+
+html[data-theme="dark"] .admin-content {
+    background: #151515 !important;
+}
+
+html[data-theme="dark"] .content-section {
+    background: #1d1d1d !important;
+    border-color: #2f2f2f !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme="dark"] .table-container,
+html[data-theme="dark"] .product-form,
+html[data-theme="dark"] .config-group,
+html[data-theme="dark"] .login-box,
+html[data-theme="dark"] .logout-modal-content {
+    background: #1f1f1f !important;
+    border-color: #2c2c2c !important;
+}
+
+html[data-theme="dark"] .products-table thead {
+    background: #ff8a5b !important;
+    color: #101010 !important;
+}
+
+html[data-theme="dark"] .products-table td,
+html[data-theme="dark"] .products-table th {
+    background: #171717 !important;
+    color: #e5e7eb !important;
+    border-color: #2c2c2c !important;
+}
+
+html[data-theme="dark"] .products-table tbody tr:hover {
+    background-color: #272727 !important;
+}
+
+/* ==================== OVERRIDES DE COLOR FIJO ==================== */
+.admin-panel,
+.admin-container {
+    background: #f3f6fb !important;
+}
+
+.admin-header {
+    background: #ff6b35 !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+.admin-sidebar {
+    background: #ffffff !important;
+    border-right-color: #d8dde6 !important;
+}
+
+.nav-btn {
+    background-color: transparent !important;
+    color: #2b2d42 !important;
+}
+
+.nav-btn:hover {
+    background: #fff4eb !important;
+    color: #ff6b35 !important;
+}
+
+.nav-btn.active {
+    background-color: #ff6b35 !important;
+    color: #ffffff !important;
+    border-left-color: #ff6b35 !important;
+    box-shadow: 0 8px 20px rgba(255, 107, 53, 0.22) !important;
+}
+
+.admin-content {
+    background: #f3f6fb !important;
+}
+
+.content-section {
+    background: #ffffff !important;
+    border-radius: 24px !important;
+    padding: 30px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05) !important;
+}
+
+.table-container,
+.product-form,
+.config-group,
+.admin-sidebar,
+.login-box,
+.logout-modal-content {
+    background: #ffffff !important;
+    border-color: #e9ecef !important;
+}
+
+.products-table thead {
+    background: #ff6b35 !important;
+    color: #ffffff !important;
+}
+
+.products-table td,
+.products-table th {
+    background: #ffffff !important;
+    border-color: #e9ecef !important;
+}
+
+.products-table tbody tr:hover {
+    background-color: #fff1e8 !important;
 }
