@@ -1783,7 +1783,6 @@ body {
 [data-theme="dark"] .admin-security-content p,
 [data-theme="dark"] .admin-security-content label,
 [data-theme="dark"] .admin-security-close,
-[data-theme="dark"] .close,
 [data-theme="dark"] .horarios-close {
     color: #F1F1F1;
 }
