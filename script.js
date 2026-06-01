@@ -50,6 +50,15 @@ async function actualizarStockSupabase(id, nuevoStock) {
 // Estado del carrito
 let carrito = [];
 let productoSeleccionado = null;
+let carritoBackendEnabled = true;
+
+function esErrorCarritoBackendNoAutorizado(error) {
+    if (!error) return false;
+    const status = error.status;
+    const code = error.code;
+    const msg = String(error.message || '').toLowerCase();
+    return status === 403 || status === 401 || code === 'PGRST116' || code === '42501' || msg.includes('row-level security') || msg.includes('violates row-level security');
+}
 
 // Inicializar la página
 document.addEventListener('DOMContentLoaded', async () => {
@@ -110,6 +119,10 @@ async function cargarCarritoBackend() {
         
         if (error) {
             console.error('Error cargando carrito de Supabase:', error);
+            if (esErrorCarritoBackendNoAutorizado(error)) {
+                carritoBackendEnabled = false;
+                console.warn('Carrito backend deshabilitado: sin permisos en Supabase. Usando solo localStorage.');
+            }
             throw error;
         }
         
@@ -135,7 +148,12 @@ async function cargarCarritoBackend() {
             }
         }
     } catch (error) {
-        console.error('Error cargando carrito del backend:', error);
+        if (error?.status === 403 || error?.status === 401 || error?.code === 'PGRST116') {
+            carritoBackendEnabled = false;
+            console.warn('Carrito backend deshabilitado: sin permisos en Supabase. Usando solo localStorage.');
+        } else {
+            console.error('Error cargando carrito del backend:', error);
+        }
         // Fallback a localStorage
         const carritoGuardado = localStorage.getItem('AZADOSk_carrito');
         if (carritoGuardado) {
@@ -147,18 +165,26 @@ async function cargarCarritoBackend() {
 // Guardar item individual en Supabase
 async function guardarCarritoBackend(productoId, cantidad) {
     try {
+        if (!carritoBackendEnabled) {
+            localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+            return;
+        }
+
         const sessionId = getSessionId();
         
         if (cantidad <= 0) {
             // Eliminar item si cantidad es 0
-            await supabaseClient
+            const { error } = await supabaseClient
                 .from('carritos')
                 .delete()
                 .eq('sesion_id', sessionId)
                 .eq('producto_id', productoId);
+            if (error) {
+                throw error;
+            }
         } else {
             // Insertar o actualizar (upsert)
-            await supabaseClient
+            const { error } = await supabaseClient
                 .from('carritos')
                 .upsert({
                     sesion_id: sessionId,
@@ -168,12 +194,19 @@ async function guardarCarritoBackend(productoId, cantidad) {
                 }, {
                     onConflict: 'sesion_id,producto_id'
                 });
+            if (error) {
+                throw error;
+            }
         }
         
         // Backup en localStorage
         localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
     } catch (error) {
         console.error('Error guardando carrito en backend:', error);
+        if (esErrorCarritoBackendNoAutorizado(error)) {
+            carritoBackendEnabled = false;
+            console.warn('Carrito backend deshabilitado: sin permisos en Supabase. Usando solo localStorage.');
+        }
         // Fallback: solo localStorage
         localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
     }
@@ -182,13 +215,21 @@ async function guardarCarritoBackend(productoId, cantidad) {
 // Sincronizar carrito completo con Supabase
 async function sincronizarCarritoCompleto() {
     try {
+        if (!carritoBackendEnabled) {
+            localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
+            return;
+        }
+
         const sessionId = getSessionId();
         
         // Eliminar carrito actual en Supabase
-        await supabaseClient
+        const { error: deleteError } = await supabaseClient
             .from('carritos')
             .delete()
             .eq('sesion_id', sessionId);
+        if (deleteError) {
+            throw deleteError;
+        }
         
         // Insertar items actuales
         if (carrito.length > 0) {
@@ -200,15 +241,22 @@ async function sincronizarCarritoCompleto() {
                 actualizado_en: new Date().toISOString()
             }));
             
-            await supabaseClient
+            const { error: insertError } = await supabaseClient
                 .from('carritos')
                 .insert(items);
+            if (insertError) {
+                throw insertError;
+            }
         }
         
         // Backup en localStorage
         localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
     } catch (error) {
         console.error('Error sincronizando carrito:', error);
+        if (esErrorCarritoBackendNoAutorizado(error)) {
+            carritoBackendEnabled = false;
+            console.warn('Carrito backend deshabilitado: sin permisos en Supabase. Usando solo localStorage.');
+        }
         // Fallback: solo localStorage
         localStorage.setItem('AZADOSk_carrito', JSON.stringify(carrito));
     }
@@ -383,10 +431,6 @@ async function agregarAlCarrito() {
             });
         }
 
-        // Reducir stock temporalmente
-        productoSeleccionado.stock -= cantidad;
-        await actualizarStockSupabase(productoSeleccionado.id, productoSeleccionado.stock);
-
         // Mostrar notificación
         mostrarNotificacion(`${productoSeleccionado.nombre} agregado al carrito`, 'success');
         cerrarModal();
@@ -465,12 +509,7 @@ function abrirCarrito() {
 async function eliminarDelCarrito(id) {
     const item = carrito.find(item => item.id === id);
     if (item) {
-            // Devolver stock
-        const producto = productos.find(p => p.id === id);
-        if (producto) {
-            producto.stock += item.cantidad;
-            await actualizarStockSupabase(producto.id, producto.stock);
-        }
+        // No se ajusta stock aquí: el stock se descuenta sólo cuando el admin acepta el pedido.
     }
     
     carrito = carrito.filter(item => item.id !== id);
@@ -488,6 +527,50 @@ function cerrarCarrito() {
     document.getElementById('cartModal').classList.remove('show');
 }
 
+function extraerColumnasInvalidasSupabase(error) {
+    if (!error?.message) return [];
+    const mensaje = error.message || '';
+    const matches = [
+        ...mensaje.matchAll(/Could not find the '([^']+)' column/g),
+        ...mensaje.matchAll(/column\s+"([^"]+)"\s+does not exist/gi),
+        ...mensaje.matchAll(/column\s+`([^`]+)`\s+does not exist/gi),
+        ...mensaje.matchAll(/Unknown column '([^']+)'/gi),
+        ...mensaje.matchAll(/column\s+([^\s]+)\s+unknown/gi)
+    ];
+    return Array.from(new Set(matches.map(match => match[1])));
+}
+
+async function insertarPedidoSupabase(pedidoData) {
+    if (!pedidoData) return { error: null };
+
+    let dataToInsert = { ...pedidoData };
+    let attempts = 0;
+    let lastError = null;
+
+    while (attempts < 3) {
+        const { error } = await supabaseClient
+            .from('pedidos')
+            .insert(dataToInsert);
+
+        if (!error) {
+            return { error: null };
+        }
+
+        lastError = error;
+        const invalidColumns = extraerColumnasInvalidasSupabase(error);
+        if (invalidColumns.length === 0) {
+            console.error('Error insertando pedido en Supabase:', error);
+            return { error };
+        }
+
+        console.warn('Columnas inválidas detectadas en pedido Supabase:', invalidColumns);
+        invalidColumns.forEach(column => delete dataToInsert[column]);
+        attempts += 1;
+    }
+
+    return { error: lastError };
+}
+
 // Confirmar pedido por WhatsApp
 async function confirmarPedidoWhatsApp() {
     if (carrito.length === 0) {
@@ -497,7 +580,117 @@ async function confirmarPedidoWhatsApp() {
 
     const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
     const detalles = carrito.map(item => `${item.nombre} (${item.cantidad}x)`).join(', ');
+    const numeroPedido = 'PED-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+    try {
+        const pedidoData = {
+            numero_pedido: numeroPedido,
+            detalles: detalles,
+            items: JSON.stringify(carrito.map(item => ({
+                id: item.id,
+                nombre: item.nombre,
+                cantidad: item.cantidad,
+                precio: item.precio
+            }))),
+            total: total,
+            estado: 'pendiente',
+            creado_en: new Date().toISOString()
+        };
+
+        const { error } = await insertarPedidoSupabase(pedidoData);
+        if (error) {
+            console.error('Error guardando pedido WhatsApp en Supabase:', error);
+            mostrarNotificacion('Pedido enviado por WhatsApp, pero no se pudo registrar internamente.', 'warning');
+        }
+    } catch (error) {
+        console.error('Error guardando pedido WhatsApp en Supabase:', error);
+        mostrarNotificacion('Pedido enviado por WhatsApp, pero no se pudo registrar internamente.', 'warning');
+    }
+
     const mensaje = `Hola, quiero hacer un pedido:\n\n${detalles}\n\nTotal: $${formatearPrecio(total)}\n\n*Pedido rápido por WhatsApp*`;
+
+    // Número de WhatsApp
+    const numeroWhatsApp = '573206364371';
+    const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+
+    window.open(url, '_blank');
+
+    // Vaciar carrito después de confirmar
+    carrito = [];
+    sincronizarCarritoCompleto(); // Vaciar en backend - sin await
+    actualizarCarritoUI();
+    cerrarCarrito();
+    cargarProductos('todos'); // Recargar para mostrar stock actualizado
+    mostrarNotificacion('Pedido enviado por WhatsApp', 'success');
+}
+
+// Mostrar modal ligero para pedir nombre antes de enviar por WhatsApp
+function mostrarNombrePrompt() {
+    // Si ya hay un nombre guardado en el formulario cliente, usarlo; sino pedir
+    const clienteNombre = document.getElementById('clienteNombre')?.value;
+    if (clienteNombre && clienteNombre.trim().length > 0) {
+        // Llamar directamente a la versión con nombre
+        confirmarPedidoWhatsAppConNombreDirecto(clienteNombre);
+        return;
+    }
+
+    // Mostrar modal ligero
+    document.getElementById('whatsappNameModal').classList.add('show');
+}
+
+function cerrarNombreModal() {
+    document.getElementById('whatsappNameModal').classList.remove('show');
+}
+
+// Enviar pedido por WhatsApp tras ingresar el nombre en el modal
+async function confirmarPedidoWhatsAppConNombre(event) {
+    event.preventDefault();
+    const nombre = document.getElementById('whatsappNombre').value || 'Pedido WhatsApp';
+    cerrarNombreModal();
+    await confirmarPedidoWhatsAppConNombreDirecto(nombre);
+    // limpiar input
+    const form = document.getElementById('whatsappNameForm');
+    if (form) form.reset();
+}
+
+// Lógica compartida: toma un nombre y procesa el pedido (inserta y abre WhatsApp)
+async function confirmarPedidoWhatsAppConNombreDirecto(nombre) {
+    if (carrito.length === 0) {
+        mostrarNotificacion('Tu carrito está vacío', 'error');
+        return;
+    }
+
+    const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    const detalles = carrito.map(item => `${item.nombre} (${item.cantidad}x)`).join(', ');
+    const numeroPedido = 'PED-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+    try {
+        const pedidoData = {
+            numero_pedido: numeroPedido,
+            cliente_nombre: nombre,
+            detalles: detalles,
+            items: JSON.stringify(carrito.map(item => ({
+                id: item.id,
+                nombre: item.nombre,
+                cantidad: item.cantidad,
+                precio: item.precio
+            }))),
+            total: total,
+            estado: 'pendiente',
+            creado_en: new Date().toISOString()
+        };
+
+        const { error } = await insertarPedidoSupabase(pedidoData);
+        if (error) {
+            console.error('Error guardando pedido WhatsApp en Supabase:', error);
+            mostrarNotificacion('Pedido enviado por WhatsApp, pero no se pudo registrar internamente.', 'warning');
+        }
+    } catch (error) {
+        console.error('Error guardando pedido WhatsApp en Supabase:', error);
+        mostrarNotificacion('Pedido enviado por WhatsApp, pero no se pudo registrar internamente.', 'warning');
+    }
+
+    const mensaje = `Hola, quiero hacer un pedido:\n\n*Nombre:* ${nombre}\n\n${detalles}\n\nTotal: $${formatearPrecio(total)}\n\n*Pedido rápido por WhatsApp*`;
 
     // Número de WhatsApp
     const numeroWhatsApp = '573206364371';
@@ -546,21 +739,25 @@ async function confirmarPedidoCliente(event) {
     const numeroPedido = 'PED-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
     try {
-        // Guardar pedido en Supabase
-        const { data, error } = await supabaseClient
-            .from('pedidos')
-            .insert({
-                numero_pedido: numeroPedido,
-                cliente_nombre: nombre,
-                cliente_telefono: telefono,
-                cliente_direccion: direccion,
-                cliente_notas: notas,
-                detalles: detalles,
-                total: total,
-                estado: 'pendiente',
-                creado_en: new Date().toISOString()
-            });
+        const pedidoData = {
+            numero_pedido: numeroPedido,
+            cliente_nombre: nombre,
+            cliente_telefono: telefono,
+            cliente_direccion: direccion,
+            cliente_notas: notas,
+            detalles: detalles,
+            items: JSON.stringify(carrito.map(item => ({
+                id: item.id,
+                nombre: item.nombre,
+                cantidad: item.cantidad,
+                precio: item.precio
+            }))),
+            total: total,
+            estado: 'pendiente',
+            creado_en: new Date().toISOString()
+        };
 
+        const { error } = await insertarPedidoSupabase(pedidoData);
         if (error) {
             console.error('Error guardando pedido:', error);
             mostrarNotificacion('Error al guardar el pedido. Inténtalo de nuevo.', 'error');
@@ -568,7 +765,9 @@ async function confirmarPedidoCliente(event) {
         }
 
         // Actualizar estadísticas después de guardar
-        await cargarEstadisticasPedidos();
+        if (typeof cargarEstadisticasPedidos === 'function') {
+            await cargarEstadisticasPedidos();
+        }
 
     } catch (error) {
         console.error('Error procesando pedido:', error);
@@ -609,6 +808,7 @@ window.addEventListener('click', (event) => {
     const productModal = document.getElementById('productModal');
     const cartModal = document.getElementById('cartModal');
     const clienteModal = document.getElementById('clienteModal');
+    const whatsappNameModal = document.getElementById('whatsappNameModal');
 
     if (event.target === productModal) {
         cerrarModal();
@@ -618,6 +818,9 @@ window.addEventListener('click', (event) => {
     }
     if (event.target === clienteModal) {
         cerrarClienteModal();
+    }
+    if (event.target === whatsappNameModal) {
+        cerrarNombreModal();
     }
 });
 

@@ -67,7 +67,11 @@
             <aside class="admin-sidebar" id="adminSidebar">
                 <div class="sidebar-header-mobile">
                     <h3>Menú</h3>
-                    <button class="menu-close" onclick="toggleMenu()" aria-label="Cerrar menú">✕</button>
+                    <button class="menu-close" onclick="toggleMenu()" aria-label="Cerrar menú">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
                 </div>
                 <nav class="admin-nav">
                     <button class="nav-btn active" onclick="cambiarSeccion('dashboard'); cerrarMenuSiMovil()">
@@ -128,12 +132,12 @@
                         <div class="stat-card kpi-card">
                             <div class="kpi-icon">✅</div>
                             <div class="kpi-value" id="dashPedidosAceptados">0</div>
-                            <div class="kpi-label">Pedidos Aceptados</div>
+                            <div class="kpi-label">Pedidos Aceptados Hoy</div>
                         </div>
                         <div class="stat-card kpi-card">
                             <div class="kpi-icon">❌</div>
                             <div class="kpi-value" id="dashPedidosRechazados">0</div>
-                            <div class="kpi-label">Pedidos Rechazados</div>
+                            <div class="kpi-label">Pedidos Rechazados Hoy</div>
                         </div>
                     </div>
                     
@@ -620,6 +624,9 @@
                                 <!-- Se llenará con JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mobile-pedidos-list" id="pedidosMobileList" aria-label="Pedidos móviles">
+                        <!-- Lista de pedidos para móvil -->
                     </div>
                 </section>
 

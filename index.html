@@ -96,7 +96,7 @@
             <!-- Opciones de confirmación -->
             <div class="cart-options">
                 <button class="btn btn-primary" onclick="mostrarFormularioCliente()">📝 Llenar Información</button>
-                <button class="btn btn-success" onclick="confirmarPedidoWhatsApp()">📱 Pedir por WhatsApp</button>
+                <button class="btn btn-success" onclick="mostrarNombrePrompt()">📱 Pedir por WhatsApp</button>
             </div>
         </div>
     </div>
@@ -128,6 +128,24 @@
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Confirmar Pedido</button>
                     <button type="button" class="btn btn-secondary" onclick="cerrarClienteModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal ligero para pedir solo el nombre antes de enviar por WhatsApp -->
+    <div class="modal" id="whatsappNameModal">
+        <div class="modal-content modal-cliente">
+            <span class="close" onclick="cerrarNombreModal()">&times;</span>
+            <h2>Nombre para el pedido</h2>
+            <form id="whatsappNameForm" onsubmit="confirmarPedidoWhatsAppConNombre(event)">
+                <div class="form-group">
+                    <label for="whatsappNombre">Nombre *</label>
+                    <input type="text" id="whatsappNombre" placeholder="Tu nombre o 'Pedido WhatsApp'" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Enviar por WhatsApp</button>
+                    <button type="button" class="btn btn-secondary" onclick="cerrarNombreModal()">Cancelar</button>
                 </div>
             </form>
         </div>

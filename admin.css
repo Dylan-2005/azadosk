@@ -565,6 +565,20 @@ body {
     top: 80px;
     height: calc(100vh - 80px);
     overflow-y: auto;
+    transition: width 0.3s ease, transform 0.3s ease;
+}
+
+.admin-sidebar.collapsed {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    border-right: none;
+    transform: translateX(-100%);
+}
+
+.admin-sidebar.collapsed ~ .admin-content {
+    margin-left: 0;
+    width: 100%;
 }
 
 .admin-nav {
@@ -822,35 +836,166 @@ body {
 
 .products-table .actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding-right: 12px;
+    min-width: 200px;
+}
+
+.products-table th:last-child,
+.products-table td:last-child {
+    padding-right: 24px;
+    min-width: 190px;
 }
 
 .action-btn {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
+    padding: 10px 14px;
+    border: 1px solid rgba(16, 24, 40, 0.08);
+    border-radius: 16px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 96px;
     transition: var(--transition);
+    background: rgba(247, 250, 255, 0.92);
+    color: var(--text-primary);
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
 }
 
-.edit-btn {
-    background-color: var(--info-color);
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px rgba(16, 24, 40, 0.12);
+    background: rgba(235, 244, 255, 1);
+}
+
+.action-btn.edit-btn {
+    background: rgba(46, 170, 255, 0.24);
+    color: #0d4a7b;
+    border-color: rgba(46, 170, 255, 0.45);
+}
+
+.action-btn.edit-btn:hover {
+    background: rgba(46, 170, 255, 0.32);
+}
+
+.action-btn.delete-btn {
+    background: rgba(255, 108, 108, 0.24);
+    color: #8a1f1f;
+    border-color: rgba(255, 108, 108, 0.42);
+}
+
+.action-btn.delete-btn:hover {
+    background: rgba(255, 108, 108, 0.34);
+}
+
+[data-theme="dark"] .action-btn {
+    background: rgba(255, 255, 255, 0.12);
     color: var(--text-light);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="dark"] .action-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    min-width: 42px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-pedidos-list {
+    display: none;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.pedido-card {
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--bg-card);
+    padding: 16px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pedido-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+}
+
+.pedido-card-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.pedido-card-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.pedido-card-body {
+    display: grid;
+    gap: 8px;
+}
+
+.pedido-card-eye {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+    min-width: 48px;
+    height: 48px;
+}
+
+.pedido-card-eye:hover {
+    background: #e55a2b;
+}
+
+@media (max-width: 768px) {
+    .table-container {
+        display: none;
+    }
+
+    .mobile-pedidos-list {
+        display: grid;
+    }
+}
+
+..edit-btn {
+    background-color: rgba(46, 170, 255, 0.22);
+    color: #eaf6ff;
+    border-color: rgba(46, 170, 255, 0.32);
 }
 
 .edit-btn:hover {
-    background-color: var(--info-color);
+    background-color: rgba(46, 170, 255, 0.28);
 }
 
 .delete-btn {
-    background-color: var(--danger-color);
-    color: var(--text-light);
+    background-color: rgba(255, 108, 108, 0.28);
+    color: #fff5f5;
+    border-color: rgba(255, 108, 108, 0.36);
 }
 
 .delete-btn:hover {
-    background-color: var(--danger-color);
+    background-color: rgba(255, 108, 108, 0.36);
 }
 
 /* Estilos para stock */
@@ -1300,6 +1445,50 @@ body {
         justify-content: space-between;
     }
 
+    .admin-container {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100vh;
+        z-index: 100;
+        background: var(--bg-sidebar);
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.12);
+        transition: left 0.3s ease;
+    }
+
+    .admin-sidebar.show {
+        left: 0;
+    }
+
+    .admin-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .content-section {
+        padding: 20px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .products-table {
+        min-width: 700px;
+        font-size: 12px;
+    }
+
+    .products-table th,
+    .products-table td {
+        padding: 10px;
+    }
+
     .product-form {
         padding: 20px;
     }
@@ -1314,15 +1503,6 @@ body {
 
     .form-actions .btn {
         min-width: 100%;
-    }
-
-    .products-table {
-        font-size: 12px;
-    }
-
-    .products-table th,
-    .products-table td {
-        padding: 10px;
     }
 
     .stats-grid {
@@ -1408,6 +1588,15 @@ body {
 .modal-content {
     position: relative;
     animation: slideUp 0.3s ease-out;
+}
+
+/* Asegurar fondo opaco y padding para legibilidad en TODOS los modales */
+.modal-content {
+    background: var(--bg-card);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px var(--shadow-elevated);
+    max-width: 90%;
 }
 
 @keyframes fadeIn {
@@ -1968,7 +2157,7 @@ body {
 
 /* ==================== MENÚ HAMBURGUESA ==================== */
 .menu-toggle {
-    display: none;
+    display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -1981,6 +2170,7 @@ body {
     margin-right: 15px;
     border-radius: 4px;
     transition: background 0.3s;
+    color: var(--text-primary);
 }
 
 .menu-toggle:hover {
@@ -1991,7 +2181,7 @@ body {
     display: block;
     width: 24px;
     height: 2px;
-    background: var(--bg-card);
+    background: currentColor;
     margin: 3px 0;
     transition: all 0.3s;
     border-radius: 1px;
@@ -2024,17 +2214,63 @@ body {
 }
 
 .menu-close {
-    background: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
     border: none;
-    font-size: 24px;
     cursor: pointer;
+    padding: 8px;
+    gap: 4px;
     color: var(--text-secondary);
-    padding: 5px 10px;
-    line-height: 1;
+}
+
+.menu-close span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 1px;
+    transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s ease;
 }
 
 .menu-close:hover {
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.menu-close:hover span {
+    background: var(--text-primary);
+}
+
+.menu-close.active span:nth-child(1) {
+    transform: rotate(45deg) translate(4px, 4px);
+}
+
+.menu-close.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-close.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(4px, -4px);
+}
+
+html[data-theme="dark"] .menu-toggle {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .menu-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .menu-close {
+    color: #ffffff;
+}
+
+html[data-theme="dark"] .menu-close:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .sidebar-overlay {
@@ -2070,6 +2306,9 @@ body {
         z-index: 100;
         transition: left 0.3s ease;
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        border-right: 1px solid var(--border-color);
+        padding: 20px 0;
+        background: var(--bg-sidebar);
     }
     
     .admin-sidebar.show {
@@ -2080,8 +2319,39 @@ body {
         display: flex;
     }
     
+    .admin-nav {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .nav-btn {
+        width: 100%;
+        text-align: left;
+        border-left: 4px solid transparent;
+        border-bottom: none;
+        white-space: normal;
+        padding: 14px 18px;
+    }
+    
+    .nav-btn.active {
+        border-left-color: var(--primary-color);
+        border-bottom-color: transparent;
+    }
+    
     .header-left h1 {
         font-size: 16px;
+    }
+    
+    .admin-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-sidebar {
+        width: 240px;
+        left: -240px;
     }
     
     .admin-content {
@@ -2242,6 +2512,172 @@ body {
 
 .modal-large {
     max-width: 700px;
+}
+
+/* Ajustes específicos para el modal de ver pedido: hacerlo más compacto y asegurar botones visibles */
+#pedidoModal .modal-content.modal-large {
+    max-width: 520px;
+    width: 95%;
+    padding: 18px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#pedidoModal .pedido-acciones {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, rgba(255,255,255,0.04), transparent);
+    padding-top: 12px;
+    padding-bottom: 8px;
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    z-index: 5;
+}
+
+#pedidoModal .pedido-acciones .btn {
+    min-width: 120px;
+    z-index: 6;
+}
+
+#pedidoModal .close {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 48px;
+    height: 48px;
+    font-size: 40px;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+#pedidoModal .close:hover {
+    background: rgba(0, 0, 0, 0.2);
+    transform: rotate(90deg);
+}
+
+html[data-theme="dark"] #pedidoModal .close {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="dark"] #pedidoModal .close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Modo oscuro: ajustar el fondo del área sticky para contrastar */
+html[data-theme="dark"] #pedidoModal .pedido-acciones {
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+}
+
+/* ==================== RESPONSIVE PARA MÓVILES ==================== */
+@media (max-width: 768px) {
+    /* Modal más compacto en tablets */
+    #pedidoModal .modal-content.modal-large {
+        max-width: 95%;
+        padding: 16px;
+        font-size: 13px;
+    }
+    
+    #pedidoModal h3 {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+    
+    .pedido-info-row {
+        padding: 8px 0 !important;
+        font-size: 13px;
+    }
+    
+    .pedido-items {
+        padding: 10px !important;
+        margin: 12px 0 !important;
+    }
+    
+    .pedido-item {
+        padding: 6px 0 !important;
+        font-size: 12px;
+        flex-direction: column;
+    }
+    
+    .pedido-total {
+        font-size: 16px;
+        margin-top: 12px;
+        padding-top: 12px;
+    }
+    
+    #pedidoModal .pedido-acciones {
+        flex-direction: column;
+        gap: 6px;
+        padding-top: 8px;
+    }
+    
+    #pedidoModal .pedido-acciones .btn {
+        min-width: auto;
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Móvil pequeño: aún más compacto */
+    #pedidoModal .modal-content.modal-large {
+        max-width: 100%;
+        width: 100% !important;
+        padding: 12px;
+        border-radius: 12px;
+        max-height: 85vh;
+    }
+    
+    #pedidoModal h3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+    
+    .pedido-info-row {
+        padding: 6px 0 !important;
+        font-size: 12px;
+        flex-direction: column;
+    }
+    
+    .pedido-info-row strong {
+        display: block;
+        margin-bottom: 2px;
+    }
+    
+    .pedido-items {
+        padding: 8px !important;
+        margin: 10px 0 !important;
+    }
+    
+    .pedido-item {
+        padding: 4px 0 !important;
+        font-size: 11px;
+        flex-direction: column;
+    }
+    
+    .pedido-total {
+        font-size: 14px;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+    
+    #pedidoModal .close {
+        width: 44px;
+        height: 44px;
+        font-size: 36px;
+        right: 8px;
+        top: 8px;
+    }
 }
 
 /* Horarios */
@@ -2410,6 +2846,9 @@ body {
 
 .pedido-detalle {
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 .pedido-info {
@@ -2427,7 +2866,17 @@ body {
     background: var(--bg-tertiary);
     border-radius: 8px;
     padding: 15px;
-    margin: 20px 0;
+    margin: 0;
+    flex: 1;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pedido-items h4 {
+    margin: 0;
+    font-size: 14px;
 }
 
 .pedido-item {
@@ -2442,8 +2891,7 @@ body {
     font-weight: 700;
     color: var(--primary-color);
     text-align: right;
-    margin-top: 20px;
-    padding-top: 20px;
+    padding-top: 15px;
     border-top: 2px solid var(--primary-color);
 }
 
@@ -2645,6 +3093,11 @@ html[data-theme="dark"] .nav-btn.active {
 
 html[data-theme="dark"] .admin-content {
     background: #151515 !important;
+}
+
+/* Overlay más oscuro en modo oscuro para mejorar contraste */
+html[data-theme="dark"] .modal {
+    background-color: rgba(0,0,0,0.75);
 }
 
 html[data-theme="dark"] .content-section {

@@ -526,6 +526,37 @@ body {
     background-color: #1f1f1f;
 }
 
+/* Modal específico para WhatsApp: fondo oscuro y texto claro */
+#whatsappNameModal .modal-content {
+    background-color: #222; /* oscuro neutro */
+    color: #fff;
+}
+
+#whatsappNameModal .modal-content .close {
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    box-shadow: none;
+}
+
+#whatsappNameModal input {
+    background-color: rgba(255,255,255,0.04);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+#whatsappNameModal label { color: #fff; }
+
+/* Botón Cancelar en el modal oscuro: mejorar contraste */
+#whatsappNameModal .btn-secondary {
+    background-color: rgba(255,255,255,0.08);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+#whatsappNameModal .btn-secondary:hover {
+    background-color: rgba(255,255,255,0.14);
+}
+
 .modal-product {
     max-width: 600px;
     max-height: 85vh;

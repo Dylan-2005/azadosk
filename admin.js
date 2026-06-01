@@ -1,6 +1,7 @@
 // ==================== CONFIGURACIÓN ====================
 // Las credenciales de Supabase se cargan desde supabase-config.js
 const supabaseClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.key);
+let pedidosSubscription = null;
 
 // ==================== UTILIDADES SEGURAS ====================
 function safeLog(message, data) {
@@ -454,24 +455,54 @@ function toggleMenu() {
     const sidebar = document.getElementById('adminSidebar');
     const overlay = document.getElementById('sidebarOverlay');
     const menuToggle = document.getElementById('menuToggle');
-    
-    sidebar.classList.toggle('show');
-    overlay.classList.toggle('show');
+    const mobileClose = document.querySelector('.sidebar-header-mobile .menu-close');
+
+    console.log('toggleMenu called', {
+        innerWidth: window.innerWidth,
+        sidebarClasses: sidebar?.className,
+        overlayClasses: overlay?.className,
+        menuToggleClasses: menuToggle?.className,
+        mobileCloseExists: Boolean(mobileClose)
+    });
+
+    if (window.innerWidth <= 768) {
+        sidebar.classList.toggle('show');
+        overlay.classList.toggle('show');
+    } else {
+        sidebar.classList.toggle('collapsed');
+    }
+
     menuToggle.classList.toggle('active');
+    if (mobileClose) mobileClose.classList.toggle('active');
+
+    console.log('toggleMenu result', {
+        sidebarClasses: sidebar?.className,
+        overlayClasses: overlay?.className,
+        menuToggleClasses: menuToggle?.className,
+        mobileCloseClasses: mobileClose?.className
+    });
 }
 
 // Cerrar menú al cambiar de sección (en móvil)
 function cerrarMenuSiMovil() {
+    console.log('cerrarMenuSiMovil called', { innerWidth: window.innerWidth });
     // En móvil, cerrar el menú después de seleccionar
     if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('adminSidebar');
         const overlay = document.getElementById('sidebarOverlay');
         const menuToggle = document.getElementById('menuToggle');
         
+        console.log('cerrarMenuSiMovil state', {
+            sidebarClasses: sidebar?.className,
+            overlayClasses: overlay?.className,
+            menuToggleClasses: menuToggle?.className
+        });
+
         if (sidebar && sidebar.classList.contains('show')) {
             sidebar.classList.remove('show');
             overlay.classList.remove('show');
             menuToggle.classList.remove('active');
+            console.log('cerrarMenuSiMovil hid menu');
         }
     }
 }
@@ -1117,17 +1148,11 @@ async function cargarDashboard() {
         const ventasHoy = pedidosHoy?.reduce((sum, p) => sum + (p.total || 0), 0) || 0;
         document.getElementById('dashVentasHoy').textContent = '$' + formatearPrecio(ventasHoy);
         
-        // Pedidos aceptados y rechazados (todos los tiempos)
-        const { data: todosPedidos, error: todosPedError } = await supabaseClient
-            .from('pedidos')
-            .select('estado');
-        
-        if (!todosPedError && todosPedidos) {
-            const aceptados = todosPedidos.filter(p => ['preparando', 'listo', 'entregado'].includes(p.estado)).length;
-            const rechazados = todosPedidos.filter(p => p.estado === 'cancelado').length;
-            document.getElementById('dashPedidosAceptados').textContent = aceptados;
-            document.getElementById('dashPedidosRechazados').textContent = rechazados;
-        }
+        // Pedidos aceptados y rechazados hoy
+        const aceptadosHoy = pedidosHoy?.filter(p => ['preparando', 'listo', 'entregado'].includes(p.estado)).length || 0;
+        const rechazadosHoy = pedidosHoy?.filter(p => p.estado === 'cancelado').length || 0;
+        document.getElementById('dashPedidosAceptados').textContent = aceptadosHoy;
+        document.getElementById('dashPedidosRechazados').textContent = rechazadosHoy;
         
         // Estado del negocio (horarios)
         await cargarEstadoNegocio();
@@ -1149,10 +1174,38 @@ async function cargarDashboard() {
     }
 }
 
+async function obtenerPedidosHoy() {
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabaseClient
+        .from('pedidos')
+        .select('*')
+        .gte('creado_en', hoy + 'T00:00:00')
+        .lt('creado_en', hoy + 'T23:59:59');
+
+    if (error) {
+        safeError('Error obteniendo pedidos de hoy:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+async function actualizarDashboardPedidosHoy() {
+    const pedidosHoy = await obtenerPedidosHoy();
+    document.getElementById('dashPedidosHoy').textContent = pedidosHoy.length;
+    const ventasHoy = pedidosHoy.reduce((sum, p) => sum + (p.total || 0), 0);
+    document.getElementById('dashVentasHoy').textContent = '$' + formatearPrecio(ventasHoy);
+    document.getElementById('dashPedidosAceptados').textContent = pedidosHoy.filter(p => ['preparando', 'listo', 'entregado'].includes(p.estado)).length;
+    document.getElementById('dashPedidosRechazados').textContent = pedidosHoy.filter(p => p.estado === 'cancelado').length;
+    await cargarUltimosPedidos();
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
+}
+
 // Función para suscripción en tiempo real de pedidos
 function iniciarSuscripcionPedidos() {
-    // Suscribirse a cambios en la tabla pedidos
-    const subscription = supabaseClient
+    if (pedidosSubscription) return;
+
+    pedidosSubscription = supabaseClient
         .channel('pedidos_changes')
         .on('postgres_changes', {
             event: '*', // Escuchar todos los eventos (INSERT, UPDATE, DELETE)
@@ -1160,40 +1213,7 @@ function iniciarSuscripcionPedidos() {
             table: 'pedidos'
         }, async (payload) => {
             console.log('Cambio en pedidos:', payload);
-            
-            // Recargar estadísticas de pedidos aceptados/rechazados
-            try {
-                const { data: todosPedidos, error } = await supabaseClient
-                    .from('pedidos')
-                    .select('estado');
-                
-                if (!error && todosPedidos) {
-                    const aceptados = todosPedidos.filter(p => ['preparando', 'listo', 'entregado'].includes(p.estado)).length;
-                    const rechazados = todosPedidos.filter(p => p.estado === 'cancelado').length;
-                    document.getElementById('dashPedidosAceptados').textContent = aceptados;
-                    document.getElementById('dashPedidosRechazados').textContent = rechazados;
-                    
-                    // También actualizar pedidos de hoy si es necesario
-                    const hoy = new Date().toISOString().split('T')[0];
-                    const { data: pedidosHoy } = await supabaseClient
-                        .from('pedidos')
-                        .select('*')
-                        .gte('creado_en', hoy + 'T00:00:00')
-                        .lt('creado_en', hoy + 'T23:59:59');
-                    
-                    document.getElementById('dashPedidosHoy').textContent = pedidosHoy?.length || 0;
-                    const ventasHoy = pedidosHoy?.reduce((sum, p) => sum + (p.total || 0), 0) || 0;
-                    document.getElementById('dashVentasHoy').textContent = '$' + formatearPrecio(ventasHoy);
-                    
-                    // Recargar últimos pedidos
-                    await cargarUltimosPedidos();
-                    
-                    // Actualizar timestamp
-                    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
-                }
-            } catch (error) {
-                console.error('Error actualizando estadísticas en tiempo real:', error);
-            }
+            await actualizarDashboardPedidosHoy();
         })
         .subscribe();
 }
@@ -1570,9 +1590,13 @@ async function cargarPedidos(filtroEstado = '', filtroFecha = '') {
         if (error) throw error;
         
         const tbody = document.getElementById('pedidosTableBody');
+        const mobileList = document.getElementById('pedidosMobileList');
         
         if (!pedidos || pedidos.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay pedidos registrados</td></tr>';
+            if (mobileList) {
+                mobileList.innerHTML = '<div class="pedido-card"><p>No hay pedidos registrados</p></div>';
+            }
             return;
         }
         
@@ -1585,7 +1609,7 @@ async function cargarPedidos(filtroEstado = '', filtroFecha = '') {
                 <td><strong>$${formatearPrecio(p.total)}</strong></td>
                 <td><span class="estado-badge estado-${p.estado}">${p.estado}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="verPedido('${p.id}')">👁️</button>
+                    <button class="btn btn-sm btn-info" onclick="verPedido('${p.id}')" aria-label="Ver pedido ${p.numero_pedido}">👁️</button>
                     <select class="filter-select" onchange="cambiarEstadoPedido('${p.id}', this.value)" style="width: auto; display: inline-block;">
                         <option value="">Cambiar estado</option>
                         <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
@@ -1597,6 +1621,26 @@ async function cargarPedidos(filtroEstado = '', filtroFecha = '') {
                 </td>
             </tr>
         `).join('');
+        
+        if (mobileList) {
+            mobileList.innerHTML = pedidos.map(p => `
+                <article class="pedido-card">
+                    <div class="pedido-card-header">
+                        <div>
+                            <div class="pedido-card-title">Pedido #${p.numero_pedido}</div>
+                            <div class="pedido-card-meta">${new Date(p.creado_en).toLocaleDateString()} · ${p.cliente_nombre}</div>
+                        </div>
+                        <button class="btn btn-sm btn-info pedido-card-eye" onclick="verPedido('${p.id}')" aria-label="Ver pedido ${p.numero_pedido}">👁️</button>
+                    </div>
+                    <div class="pedido-card-body">
+                        <div><strong>Teléfono:</strong> ${p.cliente_telefono || 'N/A'}</div>
+                        <div><strong>Total:</strong> $${formatearPrecio(p.total)}</div>
+                        <div><strong>Estado:</strong> <span class="estado-badge estado-${p.estado}">${p.estado}</span></div>
+                    </div>
+                </article>
+            `).join('');
+        }
+
         
     } catch (error) {
         console.error('Error cargando pedidos:', error);
@@ -1621,12 +1665,27 @@ async function verPedido(id) {
         
         document.getElementById('pedidoNumero').textContent = `#${pedido.numero_pedido}`;
         
-        const items = pedido.items.map(item => `
+        // Normalizar `pedido.items`: puede ser undefined, un array, o un JSON string
+        let itemsArray = [];
+        if (pedido.items) {
+            if (Array.isArray(pedido.items)) {
+                itemsArray = pedido.items;
+            } else {
+                try {
+                    itemsArray = JSON.parse(pedido.items);
+                    if (!Array.isArray(itemsArray)) itemsArray = [];
+                } catch (e) {
+                    itemsArray = [];
+                }
+            }
+        }
+
+        const items = itemsArray.length ? itemsArray.map(item => `
             <div class="pedido-item">
                 <span>${item.nombre} x${item.cantidad}</span>
-                <span>$${formatearPrecio(item.precio * item.cantidad)}</span>
+                <span>$${formatearPrecio((item.precio || 0) * (item.cantidad || 1))}</span>
             </div>
-        `).join('');
+        `).join('') : '<div class="pedido-item">No hay items registrados</div>';
         
         document.getElementById('pedidoDetalle').innerHTML = `
             <div class="pedido-info">
@@ -1658,20 +1717,116 @@ function cerrarModalPedido() {
     document.getElementById('pedidoModal').classList.remove('show');
 }
 
+async function obtenerPedidoPorId(id) {
+    const { data, error } = await supabaseClient
+        .from('pedidos')
+        .select('estado, items')
+        .eq('id', id)
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+async function verificarYDeducirStock(pedido) {
+    if (!pedido?.items) return true;
+
+    let items = [];
+    try {
+        items = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
+    } catch (error) {
+        console.error('Error parseando items del pedido:', error);
+        return false;
+    }
+
+    if (!Array.isArray(items) || items.length === 0) return true;
+
+    const cantidadesPorProducto = {};
+    for (const item of items) {
+        const productoId = item.id || item.producto_id || null;
+        const cantidad = Number(item.cantidad || 0);
+        if (cantidad <= 0) continue;
+        const key = productoId ? `id:${productoId}` : `nombre:${item.nombre?.toString().trim().toLowerCase()}`;
+        cantidadesPorProducto[key] = (cantidadesPorProducto[key] || 0) + cantidad;
+    }
+
+    const actualizaciones = [];
+    for (const key of Object.keys(cantidadesPorProducto)) {
+        const cantidadNecesaria = cantidadesPorProducto[key];
+        let producto;
+
+        if (key.startsWith('id:')) {
+            const idProducto = Number(key.split(':')[1]);
+            const { data, error } = await supabaseClient
+                .from('productos')
+                .select('id, nombre, stock')
+                .eq('id', idProducto)
+                .single();
+
+            if (error || !data) {
+                throw new Error(`No se encontró el producto con id ${idProducto}.`);
+            }
+            producto = data;
+        } else {
+            const nombreProducto = key.replace('nombre:', '');
+            const { data, error } = await supabaseClient
+                .from('productos')
+                .select('id, nombre, stock')
+                .ilike('nombre', nombreProducto)
+                .limit(1)
+                .single();
+
+            if (error || !data) {
+                throw new Error(`No se encontró el producto ${nombreProducto}.`);
+            }
+            producto = data;
+        }
+
+        if ((producto.stock || 0) < cantidadNecesaria) {
+            throw new Error(`Stock insuficiente para ${producto.nombre}. Disponible: ${producto.stock}, requerido: ${cantidadNecesaria}.`);
+        }
+
+        actualizaciones.push({ id: producto.id, nuevoStock: producto.stock - cantidadNecesaria });
+    }
+
+    for (const update of actualizaciones) {
+        const { error } = await supabaseClient
+            .from('productos')
+            .update({ stock: update.nuevoStock })
+            .eq('id', update.id);
+
+        if (error) {
+            throw error;
+        }
+    }
+
+    return true;
+}
+
 async function cambiarEstadoPedido(id, nuevoEstado) {
     if (!nuevoEstado) return;
-    
+
     try {
+        const pedido = await obtenerPedidoPorId(id);
+        const estadoAnterior = pedido?.estado || '';
+        const estadosAceptados = ['preparando', 'listo', 'entregado'];
+        const debeDeducirStock = estadoAnterior === 'pendiente' && estadosAceptados.includes(nuevoEstado);
+
+        if (debeDeducirStock) {
+            await verificarYDeducirStock(pedido);
+        }
+
         const { error } = await supabaseClient
             .from('pedidos')
             .update({ estado: nuevoEstado, actualizado_en: new Date().toISOString() })
             .eq('id', id);
-        
+
         if (error) throw error;
         mostrarNotificacion('Estado actualizado');
         filtrarPedidos();
     } catch (error) {
-        mostrarNotificacion('Error al actualizar estado', 'error');
+        console.error('Error al actualizar estado del pedido:', error);
+        mostrarNotificacion(error?.message || 'Error al actualizar estado', 'error');
     }
 }
 
@@ -1845,6 +2000,70 @@ cambiarSeccion = function(seccion) {
     if (seccion === 'pedidos') cargarPedidos();
     if (seccion === 'configuracion') cargarConfiguracion();
 };
+
+// ==================== ACCIONES DE PEDIDOS ====================
+
+// Imprimir pedido
+function imprimirPedido(id) {
+    try {
+        // Crear ventana de impresión
+        const printWindow = window.open('', '', 'height=500,width=800');
+        const pedidoNumero = document.getElementById('pedidoNumero').textContent;
+        const pedidoDetalle = document.getElementById('pedidoDetalle').innerHTML;
+        
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Pedido ${pedidoNumero}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h3 { text-align: center; color: #FF6B35; }
+                    .pedido-info { margin: 20px 0; }
+                    .pedido-info-row { padding: 8px 0; border-bottom: 1px solid #ddd; }
+                    .pedido-items { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 8px; }
+                    .pedido-item { padding: 8px 0; border-bottom: 1px dashed #ddd; }
+                    .pedido-total { font-size: 18px; font-weight: bold; text-align: right; margin-top: 20px; color: #FF6B35; }
+                    @media print { body { padding: 0; } }
+                </style>
+            </head>
+            <body>
+                <h3>Detalle del Pedido ${pedidoNumero}</h3>
+                ${pedidoDetalle}
+                <p style="text-align: center; margin-top: 30px; font-size: 12px; color: #999;">
+                    Impreso: ${new Date().toLocaleString('es-CO')}
+                </p>
+            </body>
+            </html>
+        `;
+        
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+    } catch (error) {
+        console.error('Error al imprimir:', error);
+        alert('Error al imprimir el pedido');
+    }
+}
+
+// Enviar pedido por WhatsApp
+function whatsappPedido(id) {
+    try {
+        const pedidoNumero = document.getElementById('pedidoNumero').textContent;
+        const clienteNombre = document.querySelector('.pedido-info-row strong:first-of-type')?.nextSibling?.textContent || 'Cliente';
+        const total = document.querySelector('.pedido-total')?.textContent || '$0';
+        
+        const mensaje = `Hola, quiero confirmar mi pedido 🧾\n\nNúmero de Pedido: ${pedidoNumero}\nCliente: ${clienteNombre}\n${total}\n\nPor favor, confirma la entrega 📦`;
+        
+        const numeroWhatsApp = '573206364371';
+        const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+        
+        window.open(url, '_blank');
+    } catch (error) {
+        console.error('Error al enviar WhatsApp:', error);
+        alert('Error al abrir WhatsApp');
+    }
+}
 
 // ==================== BADGES ADICIONALES ====================
 // Agregar estilos CSS para badges
